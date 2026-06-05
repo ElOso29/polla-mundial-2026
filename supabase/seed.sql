@@ -133,7 +133,7 @@ VALUES
 -- Jornada 2 — Grupo L
 (70, 'group','L','Portugal',    'Polonia',        '2026-06-26 14:00:00-05', 'Los Ángeles'),
 (71, 'group','L','Venezuela',   'Bélgica',        '2026-06-26 17:00:00-05', 'Atlanta'),
-(72, 'group','L','Ghana',       'Países Bajos',   '2026-06-27 11:00:00-05', 'Seattle'),
+(72, 'group','L','Ghana',       'Países Bajos',   '2026-06-27 11:00:00-05', 'Seattle');
 
 -- ============================================================
 -- RONDA DE 32 (16 partidos — Partidos 73-88)
