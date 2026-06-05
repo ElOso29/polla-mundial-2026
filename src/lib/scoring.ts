@@ -49,7 +49,7 @@ export function getKnockoutBonus(
   let semifinalPts = 0
 
   const finalMatch = matches.find(m => m.stage === 'final')
-  if (finalMatch && finalMatch.home_score !== null) {
+  if (finalMatch && finalMatch.home_score !== null && finalMatch.away_score !== null) {
     const winner = finalMatch.home_score > finalMatch.away_score
       ? finalMatch.home_team
       : finalMatch.away_team
