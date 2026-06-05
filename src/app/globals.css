@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold:        #D4AF37;
+  --gold-light:  #F0D060;
+  --gold-dark:   #A07820;
+  --pitch:       #0A0A0A;
+  --pitch-card:  #111111;
+  --pitch-muted: #1A1A1A;
+  --pitch-border:#222222;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background-color: var(--pitch);
+  color: #E5E5E5;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--pitch-card); }
+::-webkit-scrollbar-thumb { background: var(--pitch-border); border-radius: 3px; }
+
+/* Inputs numéricos de pronóstico */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+
+/* Animación de carga */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--pitch-card) 25%, var(--pitch-muted) 50%, var(--pitch-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Oro brillante para podio */
+.gold-glow { text-shadow: 0 0 20px var(--gold); }
