@@ -108,6 +108,18 @@ export default function AdminPage() {
     setMatches(prev => prev.map(m => m.id === matchId ? { ...m, locked } : m))
   }
 
+  const clearResult = async (matchId: number) => {
+    await supabase.from('matches')
+      .update({ home_score: null, away_score: null, locked: false })
+      .eq('id', matchId)
+    setMatches(prev => prev.map(m =>
+      m.id === matchId ? { ...m, home_score: null, away_score: null, locked: false } : m
+    ))
+    setResults(prev => { const c = { ...prev }; delete c[matchId]; return c })
+    setMessages(m => ({ ...m, [matchId]: 'Resultado borrado' }))
+    setTimeout(() => setMessages(m => ({ ...m, [matchId]: '' })), 2000)
+  }
+
   const saveAward = async (next: Partial<typeof awards>) => {
     const merged = { ...awards, ...next }
     setAwards(merged)
@@ -297,6 +309,17 @@ export default function AdminPage() {
                 >
                   {match.locked ? '🔒' : '🔓'}
                 </button>
+
+                {/* Borrar resultado */}
+                {match.home_score !== null && (
+                  <button
+                    onClick={() => clearResult(match.id)}
+                    title="Borrar resultado (dejar sin jugar)"
+                    className="text-xs px-2 py-1 rounded border border-pitch-border text-gray-600 hover:text-red-400 hover:border-red-900 transition-colors flex-shrink-0"
+                  >
+                    🗑
+                  </button>
+                )}
               </div>
 
               {msg && (
