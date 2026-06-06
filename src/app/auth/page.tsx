@@ -2,8 +2,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { TEAMS_2026 } from '@/lib/teams'
-import TeamPicker from '@/components/TeamPicker'
 import { PICKS_DEADLINE } from '@/types'
 
 export default function AuthPage() {
@@ -11,9 +9,6 @@ export default function AuthPage() {
   const [email, setEmail]     = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
-  const [champion, setChampion] = useState('')
-  const [runnerUp, setRunnerUp] = useState('')
-  const [thirdPlace, setThirdPlace] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
   const [info, setInfo]       = useState('')
@@ -44,15 +39,9 @@ export default function AuthPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!registrationOpen) { setError('El plazo de inscripción ha cerrado.'); return }
-    if (!champion)         { setError('Debes elegir un campeón.'); return }
-    if (!runnerUp)         { setError('Debes elegir un subcampeón.'); return }
-    if (!thirdPlace)       { setError('Debes elegir un 3er puesto.'); return }
-    if (new Set([champion, runnerUp, thirdPlace]).size < 3) {
-      setError('Campeón, subcampeón y 3er puesto deben ser equipos distintos.'); return
-    }
     if (username.length < 3) { setError('El nombre de usuario debe tener al menos 3 caracteres.'); return }
 
-    setLoading(true); setError('')
+    setLoading(true); setError(''); setInfo('')
 
     // Verificar que el username no esté tomado
     const { data: existing } = await supabase
@@ -64,23 +53,17 @@ export default function AuthPage() {
       password,
       options: { data: { username } },
     })
-    if (signUpError) { setError(signUpError.message); setLoading(false); return }
+    setLoading(false)
+    if (signUpError) { setError(signUpError.message); return }
 
-    // Actualizar perfil con username y campeón
-    if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        username,
-        champion,
-      })
-      await supabase.from('secret_picks').upsert({
-        user_id: data.user.id,
-        runner_up: runnerUp,
-        third_place: thirdPlace,
-      })
+    if (data.session) {
+      // Sin confirmación de email: ya hay sesión, entra directo
+      router.push('/predictions'); router.refresh()
+    } else {
+      // Con confirmación de email: hay que confirmar el correo antes de entrar
+      setMode('login')
+      setInfo('¡Cuenta creada! 📧 Te enviamos un correo para confirmar tu cuenta. Ábrelo, haz clic en el enlace y luego inicia sesión. Después podrás elegir tu campeón, podio y pronósticos.')
     }
-    router.push('/predictions')
-    router.refresh()
   }
 
   return (
@@ -157,31 +140,9 @@ export default function AuthPage() {
         </div>
 
         {mode === 'register' && (
-          <>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">
-                🥇 Elige tu CAMPEÓN{' '}
-                <span className="text-gold text-xs">(+25 pts — editable hasta el cierre: 11 jun 14:00)</span>
-              </label>
-              <TeamPicker teams={TEAMS_2026} value={champion} onChange={setChampion} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">
-                🥈 Elige tu SUBCAMPEÓN{' '}
-                <span className="text-gold text-xs">(+20 pts)</span>
-              </label>
-              <TeamPicker teams={TEAMS_2026} value={runnerUp} onChange={setRunnerUp} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">
-                🥉 Elige tu 3er PUESTO{' '}
-                <span className="text-gold text-xs">(+10 pts)</span>
-              </label>
-              <TeamPicker teams={TEAMS_2026} value={thirdPlace} onChange={setThirdPlace} />
-            </div>
-          </>
+          <p className="text-xs text-gray-500 bg-pitch border border-pitch-border rounded-lg px-3 py-2">
+            🏆 Tu campeón, subcampeón, 3er puesto y premios (goleador, MVP...) los eliges en <span className="text-gold">"Mis Pronósticos"</span> una vez que entres. Plazo: 11 jun 14:00.
+          </p>
         )}
 
         {error && (
