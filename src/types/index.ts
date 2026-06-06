@@ -62,3 +62,10 @@ export const PRIZES = {
   second:  72_000, // 20%
   third:   36_000, // 10%
 }
+
+// Plazo para elegir/editar campeón, subcampeón, 3er puesto y premios
+// individuales (MVP, goleador, etc.). Hora de Chile (-04).
+export const PICKS_DEADLINE = new Date('2026-06-11T14:00:00-04:00')
+
+// Minutos antes del inicio de cada partido en que se cierra el pronóstico.
+export const MATCH_LOCK_MINUTES = 10

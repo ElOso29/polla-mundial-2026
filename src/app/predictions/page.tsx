@@ -3,13 +3,20 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getMatchPoints } from '@/lib/scoring'
+import { TEAMS_2026 } from '@/lib/teams'
 import type { Match, Prediction, Profile, Stage } from '@/types'
-import { STAGE_LABELS } from '@/types'
+import { STAGE_LABELS, PICKS_DEADLINE, MATCH_LOCK_MINUTES } from '@/types'
 
 type PredMap = Record<number, { home: string; away: string }>
 type SavedMap = Record<number, Prediction>
 
 const STAGES_ORDER: Stage[] = ['group', 'r32', 'r16', 'qf', 'sf', '3rd', 'final']
+
+// Un partido se cierra MATCH_LOCK_MINUTES minutos antes de su inicio.
+function isMatchLocked(match: Match): boolean {
+  if (!match.match_date) return false
+  return Date.now() >= new Date(match.match_date).getTime() - MATCH_LOCK_MINUTES * 60_000
+}
 
 export default function PredictionsPage() {
   const [profile,    setProfile]    = useState<Profile | null>(null)
@@ -20,6 +27,8 @@ export default function PredictionsPage() {
   const [activeGroup, setActiveGroup] = useState<string>('A')
   const [saving,     setSaving]     = useState<Record<number, boolean>>({})
   const [loading,    setLoading]    = useState(true)
+  const [picks,      setPicks]      = useState({ champion: '', runner_up: '', third_place: '' })
+  const [picksMsg,   setPicksMsg]   = useState('')
   const router = useRouter()
 
   const supabase = createClient()
@@ -35,7 +44,14 @@ export default function PredictionsPage() {
         supabase.from('predictions').select('*').eq('user_id', user.id),
       ])
 
-      if (profileData) setProfile(profileData)
+      if (profileData) {
+        setProfile(profileData)
+        setPicks({
+          champion:    profileData.champion ?? '',
+          runner_up:   profileData.runner_up ?? '',
+          third_place: profileData.third_place ?? '',
+        })
+      }
       if (matchData)   setMatches(matchData)
       if (predData) {
         const savedMap: SavedMap = {}
@@ -77,11 +93,23 @@ export default function PredictionsPage() {
     setSaving(s => ({ ...s, [matchId]: false }))
   }, [draft, profile])
 
+  const savePicks = async (next: Partial<typeof picks>) => {
+    const merged = { ...picks, ...next }
+    setPicks(merged)
+    if (!profile) return
+    const { error } = await supabase.from('profiles').update(merged).eq('id', profile.id)
+    setPicksMsg(error ? 'Error al guardar' : '✓ Guardado')
+    if (!error) setProfile(p => p ? { ...p, ...merged } : p)
+    setTimeout(() => setPicksMsg(''), 2500)
+  }
+
   if (loading) return (
     <div className="text-center py-20 text-gray-500 animate-pulse">Cargando pronósticos...</div>
   )
 
   if (!profile) return null
+
+  const picksOpen = new Date() < PICKS_DEADLINE
 
   const stages = STAGES_ORDER.filter(s => matches.some(m => m.stage === s))
   const groups = [...new Set(
@@ -114,6 +142,40 @@ export default function PredictionsPage() {
             <span className="text-sm text-gray-400 font-normal">/104</span>
           </div>
           <div className="text-xs text-gray-500">pronósticos guardados</div>
+        </div>
+      </div>
+
+      {/* Mi podio (campeón / subcampeón / 3er puesto) */}
+      <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-lg tracking-wide text-gold">🏆 MI PODIO</h2>
+          <span className="text-xs text-gray-500">
+            {picksOpen ? 'Editable hasta 11 jun 14:00' : 'Elecciones cerradas'}
+            {picksMsg && <span className="ml-2 text-green-400">{picksMsg}</span>}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {([
+            { key: 'champion',    label: '🥇 Campeón (+25)',    val: picks.champion },
+            { key: 'runner_up',   label: '🥈 Subcampeón (+20)', val: picks.runner_up },
+            { key: 'third_place', label: '🥉 3er puesto (+10)', val: picks.third_place },
+          ] as const).map(({ key, label, val }) => (
+            <div key={key}>
+              <label className="block text-xs text-gray-400 mb-1">{label}</label>
+              {picksOpen ? (
+                <select
+                  value={val}
+                  onChange={e => savePicks({ [key]: e.target.value })}
+                  className="w-full bg-pitch border border-pitch-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
+                >
+                  <option value="">Sin elegir...</option>
+                  {TEAMS_2026.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              ) : (
+                <div className="text-sm font-semibold text-gray-200 py-2">{val || '—'}</div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -171,7 +233,7 @@ export default function PredictionsPage() {
           const pred      = saved[match.id]
           const d         = draft[match.id] ?? { home: '', away: '' }
           const isSaving  = saving[match.id]
-          const isLocked  = match.locked
+          const isLocked  = match.locked || isMatchLocked(match)
           const hasResult = match.home_score !== null
           const { points, exact, partial } = hasResult
             ? getMatchPoints(match, pred)
@@ -287,7 +349,7 @@ export default function PredictionsPage() {
 
       <p className="text-xs text-gray-600 text-center pb-4">
         Los pronósticos se guardan automáticamente al salir de cada campo.
-        Se bloquean cuando empieza cada partido.
+        Cada partido se cierra 10 minutos antes de su inicio.
       </p>
     </div>
   )

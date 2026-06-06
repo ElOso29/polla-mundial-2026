@@ -2,21 +2,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-
-// Las 48 selecciones clasificadas al Mundial 2026 (sorteo oficial FIFA).
-// Los nombres coinciden EXACTAMENTE con los del fixture para que el
-// bonus de campeón se calcule bien.
-const TEAMS_2026 = [
-  'Alemania','Arabia Saudita','Argelia','Argentina','Australia','Austria',
-  'Bélgica','Bosnia y Herzegovina','Brasil','Cabo Verde','Canadá','Colombia',
-  'Corea del Sur','Costa de Marfil','Croacia','Curazao','Ecuador','Egipto',
-  'Escocia','España','Francia','Ghana','Haití','Inglaterra','Irán','Iraq',
-  'Japón','Jordania','Marruecos','México','Noruega','Nueva Zelanda','Países Bajos',
-  'Panamá','Paraguay','Portugal','Qatar','RD Congo','Rep. Checa','Senegal',
-  'Sudáfrica','Suecia','Suiza','Túnez','Turquía','USA','Uruguay','Uzbekistán',
-].sort()
-
-const REGISTRATION_DEADLINE = new Date('2026-06-11T00:00:00-05:00')
+import { TEAMS_2026 } from '@/lib/teams'
+import { PICKS_DEADLINE } from '@/types'
 
 export default function AuthPage() {
   const [mode, setMode]       = useState<'login' | 'register'>('login')
@@ -31,7 +18,7 @@ export default function AuthPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const registrationOpen = new Date() < REGISTRATION_DEADLINE
+  const registrationOpen = new Date() < PICKS_DEADLINE
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -233,7 +220,7 @@ export default function AuthPage() {
           <p>🥇 1er lugar: $252.000 · 🥈 2do: $72.000 · 🥉 3ro: $36.000</p>
           <p>⚽ Exacto = 5pts · Ganador = 3pts · Goles de un equipo = 1pt c/u</p>
           <p>🏆 Campeón +25 · Subcampeón +20 · 3er puesto +10</p>
-          <p>📅 Plazo de inscripción: 11 de junio 2026</p>
+          <p>📅 Plazo de inscripción y elecciones: 11 jun 2026, 14:00 (Chile)</p>
         </div>
       )}
     </div>

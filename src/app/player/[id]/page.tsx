@@ -86,9 +86,11 @@ export default function PlayerPage() {
           <h1 className="font-display text-4xl tracking-wider text-gold mt-1">
             {player!.username}
           </h1>
-          {player!.champion && (
-            <p className="text-sm text-gold-dark mt-0.5">🏆 Campeón: {player!.champion}</p>
-          )}
+          <div className="text-sm text-gold-dark mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+            {player!.champion    && <span>🥇 {player!.champion}</span>}
+            {player!.runner_up   && <span>🥈 {player!.runner_up}</span>}
+            {player!.third_place && <span>🥉 {player!.third_place}</span>}
+          </div>
         </div>
         <div className="flex gap-4 text-center">
           {[
