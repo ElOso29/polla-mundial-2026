@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getMatchPoints } from '@/lib/scoring'
 import { TEAMS_2026 } from '@/lib/teams'
+import PlayerPicker from '@/components/PlayerPicker'
 import type { Match, Prediction, Profile, Stage, Player } from '@/types'
 import { STAGE_LABELS, PICKS_DEADLINE, MATCH_LOCK_MINUTES } from '@/types'
 
@@ -122,14 +123,6 @@ export default function PredictionsPage() {
   const picksOpen = new Date() < PICKS_DEADLINE
 
   const goalkeepers = players.filter(p => p.position === 'GK')
-  const playerOptgroups = (list: Player[]) =>
-    [...new Set(list.map(p => p.team))].sort().map(team => (
-      <optgroup key={team} label={team}>
-        {list.filter(p => p.team === team).map(p => (
-          <option key={p.id} value={p.name}>{p.name}</option>
-        ))}
-      </optgroup>
-    ))
 
   const stages = STAGES_ORDER.filter(s => matches.some(m => m.stage === s))
   const groups = [...new Set(
@@ -213,18 +206,12 @@ export default function PredictionsPage() {
               ] as const).map(({ key, label, list }) => (
                 <div key={key}>
                   <label className="block text-xs text-gray-400 mb-1">{label}</label>
-                  {picksOpen ? (
-                    <select
-                      value={picks[key]}
-                      onChange={e => savePicks({ [key]: e.target.value })}
-                      className="w-full bg-pitch border border-pitch-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
-                    >
-                      <option value="">Sin elegir...</option>
-                      {playerOptgroups(list)}
-                    </select>
-                  ) : (
-                    <div className="text-sm font-semibold text-gray-200 py-2">{picks[key] || '—'}</div>
-                  )}
+                  <PlayerPicker
+                    players={list}
+                    value={picks[key]}
+                    onChange={(name) => savePicks({ [key]: name })}
+                    disabled={!picksOpen}
+                  />
                 </div>
               ))}
             </div>

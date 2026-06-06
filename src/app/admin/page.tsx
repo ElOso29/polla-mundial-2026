@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import PlayerPicker from '@/components/PlayerPicker'
 import type { Match, Profile, Stage, Player, Awards } from '@/types'
 import { STAGE_LABELS } from '@/types'
 
@@ -110,14 +111,6 @@ export default function AdminPage() {
   if (!profile?.is_admin) return null
 
   const goalkeepers = players.filter(p => p.position === 'GK')
-  const playerOptgroups = (list: Player[]) =>
-    [...new Set(list.map(p => p.team))].sort().map(team => (
-      <optgroup key={team} label={team}>
-        {list.filter(p => p.team === team).map(p => (
-          <option key={p.id} value={p.name}>{p.name}</option>
-        ))}
-      </optgroup>
-    ))
 
   const stages = STAGES_ORDER.filter(s => matches.some(m => m.stage === s))
   const groups = [...new Set(
@@ -163,14 +156,12 @@ export default function AdminPage() {
             ] as const).map(({ key, label, list }) => (
               <div key={key}>
                 <label className="block text-xs text-gray-400 mb-1">{label}</label>
-                <select
+                <PlayerPicker
+                  players={list}
                   value={awards[key]}
-                  onChange={e => saveAward({ [key]: e.target.value })}
-                  className="w-full bg-pitch border border-pitch-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
-                >
-                  <option value="">Sin definir...</option>
-                  {playerOptgroups(list)}
-                </select>
+                  onChange={(name) => saveAward({ [key]: name })}
+                  placeholder="Sin definir..."
+                />
               </div>
             ))}
           </div>
