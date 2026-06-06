@@ -61,6 +61,9 @@ export default function AuthPage() {
         id: data.user.id,
         username,
         champion,
+      })
+      await supabase.from('secret_picks').upsert({
+        user_id: data.user.id,
         runner_up: runnerUp,
         third_place: thirdPlace,
       })

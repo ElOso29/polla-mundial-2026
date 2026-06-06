@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { getMatchPoints, getBonus, getAwardPoints } from '@/lib/scoring'
-import type { Match, Prediction, Profile, Stage, Awards } from '@/types'
+import type { Match, Prediction, Profile, Stage, Awards, SecretPicks } from '@/types'
 import { STAGE_LABELS } from '@/types'
 
 const STAGES_ORDER: Stage[] = ['group', 'r32', 'r16', 'qf', 'sf', '3rd', 'final']
@@ -17,6 +17,7 @@ export default function PlayerPage() {
   const [activeStage, setActiveStage] = useState<Stage>('group')
   const [activeGroup, setActiveGroup] = useState<string>('A')
   const [awards,    setAwards]    = useState<Awards | null>(null)
+  const [secret,    setSecret]    = useState<SecretPicks | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading,   setLoading]   = useState(true)
   const [notFound,  setNotFound]  = useState(false)
@@ -26,15 +27,17 @@ export default function PlayerPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUserId(user?.id ?? null)
-      const [{ data: playerData }, { data: matchData }, { data: predData }, { data: awardsData }] = await Promise.all([
+      const [{ data: playerData }, { data: matchData }, { data: predData }, { data: awardsData }, { data: secretData }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', id).single(),
         supabase.from('matches').select('*').order('match_number'),
         supabase.from('predictions').select('*').eq('user_id', id),
         supabase.from('awards').select('*').maybeSingle(),
+        supabase.from('secret_picks').select('*').eq('user_id', id).maybeSingle(),
       ])
       if (!playerData) { setNotFound(true); setLoading(false); return }
       setPlayer(playerData)
       setAwards((awardsData as Awards) ?? null)
+      setSecret((secretData as SecretPicks) ?? null)
       if (matchData) setMatches(matchData)
       if (predData) {
         const map: Record<number, Prediction> = {}
@@ -56,6 +59,12 @@ export default function PlayerPage() {
 
   const isOwn = !!currentUserId && currentUserId === id
   const matchStarted = (m: Match) => !!m.match_date && Date.now() >= new Date(m.match_date).getTime()
+  const firstKickoff = matches.reduce<Date | null>((min, m) => {
+    if (!m.match_date) return min
+    const d = new Date(m.match_date)
+    return !min || d < min ? d : min
+  }, null)
+  const revealSecret = isOwn || (!!firstKickoff && Date.now() >= +firstKickoff)
 
   const stages = STAGES_ORDER.filter(s => matches.some(m => m.stage === s))
   const groups = [...new Set(
@@ -80,9 +89,9 @@ export default function PlayerPage() {
     if (partial) partialCount++
   }
   if (player) {
-    const bonus = getBonus(player, matches)
+    const bonus = getBonus(player.champion, secret, matches)
     totalPts += bonus.champion + bonus.runner_up + bonus.third
-    totalPts += getAwardPoints(player, awards)
+    totalPts += getAwardPoints(secret, awards)
   }
 
   return (
@@ -97,16 +106,24 @@ export default function PlayerPage() {
             {player!.username}
           </h1>
           <div className="text-sm text-gold-dark mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-            {player!.champion    && <span>🥇 {player!.champion}</span>}
-            {player!.runner_up   && <span>🥈 {player!.runner_up}</span>}
-            {player!.third_place && <span>🥉 {player!.third_place}</span>}
+            {player!.champion && <span>🥇 {player!.champion}</span>}
+            {revealSecret ? (
+              <>
+                {secret?.runner_up   && <span>🥈 {secret.runner_up}</span>}
+                {secret?.third_place && <span>🥉 {secret.third_place}</span>}
+              </>
+            ) : (
+              <span className="text-gray-600 text-xs">🔒 resto oculto hasta el inicio del Mundial</span>
+            )}
           </div>
-          <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-            {player!.top_scorer   && <span>⚽ {player!.top_scorer}</span>}
-            {player!.mvp          && <span>⭐ {player!.mvp}</span>}
-            {player!.best_gk      && <span>🧤 {player!.best_gk}</span>}
-            {player!.young_player && <span>🌱 {player!.young_player}</span>}
-          </div>
+          {revealSecret && (
+            <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+              {secret?.top_scorer   && <span>⚽ {secret.top_scorer}</span>}
+              {secret?.mvp          && <span>⭐ {secret.mvp}</span>}
+              {secret?.best_gk      && <span>🧤 {secret.best_gk}</span>}
+              {secret?.young_player && <span>🌱 {secret.young_player}</span>}
+            </div>
+          )}
         </div>
         <div className="flex gap-4 text-center">
           {[

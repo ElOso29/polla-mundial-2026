@@ -8,14 +8,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id           UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username     TEXT UNIQUE NOT NULL,
   is_admin     BOOLEAN DEFAULT FALSE,
-  champion     TEXT,                      -- equipo elegido como campeón (+25)
-  runner_up    TEXT,                      -- equipo elegido como subcampeón (+20)
-  third_place  TEXT,                      -- equipo elegido como 3er puesto (+10)
-  top_scorer   TEXT,                      -- goleador elegido (+10)
-  mvp          TEXT,                      -- MVP elegido (+10)
-  best_gk      TEXT,                      -- mejor arquero elegido (+10)
-  young_player TEXT,                      -- jugador joven elegido (+10)
+  champion     TEXT,                      -- equipo campeón elegido (PÚBLICO, +25)
   created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 1d. ELECCIONES PRIVADAS (subcampeón, 3er puesto y premios individuales)
+-- Ocultas para los demás hasta que empieza el Mundial (primer partido).
+CREATE TABLE IF NOT EXISTS public.secret_picks (
+  user_id      UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  runner_up    TEXT,                      -- subcampeón (+20)
+  third_place  TEXT,                      -- 3er puesto (+10)
+  top_scorer   TEXT,                      -- goleador (+10)
+  mvp          TEXT,                      -- MVP (+10)
+  best_gk      TEXT,                      -- mejor arquero (+10)
+  young_player TEXT,                      -- jugador joven (+10)
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 1b. JUGADORES (plantillas de las 48 selecciones)
@@ -100,8 +107,9 @@ CREATE TRIGGER predictions_updated_at
 ALTER TABLE public.profiles    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.matches     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.players     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.awards      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.players      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.awards       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.secret_picks ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: cualquiera puede leer, solo el dueño actualiza
 CREATE POLICY "profiles_select" ON public.profiles FOR SELECT USING (TRUE);
@@ -144,6 +152,17 @@ CREATE POLICY "players_insert" ON public.players FOR INSERT
 CREATE POLICY "awards_select" ON public.awards FOR SELECT USING (TRUE);
 CREATE POLICY "awards_update" ON public.awards FOR UPDATE
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin));
+
+-- Secret picks: ves los tuyos siempre; los ajenos SOLO cuando empieza el Mundial
+CREATE POLICY "secret_picks_select" ON public.secret_picks FOR SELECT
+  USING (
+    auth.uid() = user_id
+    OR NOW() >= (SELECT MIN(match_date) FROM public.matches)
+  );
+CREATE POLICY "secret_picks_insert" ON public.secret_picks FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "secret_picks_update" ON public.secret_picks FOR UPDATE
+  USING (auth.uid() = user_id);
 
 -- ============================================================
 -- CONTEO DE PRONÓSTICOS (sin exponer el contenido)

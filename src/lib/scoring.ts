@@ -1,4 +1,4 @@
-import type { Match, Prediction, Profile, PlayerStats, Awards } from '@/types'
+import type { Match, Prediction, Profile, PlayerStats, Awards, SecretPicks } from '@/types'
 
 // ============================================================
 // CÁLCULO DE PUNTAJE POR PARTIDO
@@ -56,7 +56,8 @@ function isPlaceholderTeam(name: string): boolean {
 // ============================================================
 
 export function getBonus(
-  profile: Profile,
+  champion: string | null,
+  secret: SecretPicks | null,
   matches: Match[]
 ): { champion: number; runner_up: number; third: number } {
   let championPts = 0
@@ -78,8 +79,8 @@ export function getBonus(
       ? finalMatch.away_team
       : finalMatch.home_team
 
-    if (profile.champion && profile.champion === winner) championPts = 25
-    if (profile.runner_up && profile.runner_up === loser) runnerPts = 20
+    if (champion && champion === winner) championPts = 25
+    if (secret?.runner_up && secret.runner_up === loser) runnerPts = 20
   }
 
   // Partido por el 3er lugar → tercer puesto
@@ -94,7 +95,7 @@ export function getBonus(
       ? thirdMatch.home_team
       : thirdMatch.away_team
 
-    if (profile.third_place && profile.third_place === thirdWinner) thirdPts = 10
+    if (secret?.third_place && secret.third_place === thirdWinner) thirdPts = 10
   }
 
   return { champion: championPts, runner_up: runnerPts, third: thirdPts }
@@ -105,13 +106,13 @@ export function getBonus(
 //   · Goleador · MVP · Mejor arquero · Jugador joven
 // ============================================================
 
-export function getAwardPoints(profile: Profile, awards: Awards | null): number {
-  if (!awards) return 0
+export function getAwardPoints(secret: SecretPicks | null, awards: Awards | null): number {
+  if (!awards || !secret) return 0
   let pts = 0
-  if (profile.top_scorer   && profile.top_scorer   === awards.top_scorer)   pts += 10
-  if (profile.mvp          && profile.mvp          === awards.mvp)          pts += 10
-  if (profile.best_gk      && profile.best_gk      === awards.best_gk)      pts += 10
-  if (profile.young_player && profile.young_player === awards.young_player) pts += 10
+  if (secret.top_scorer   && secret.top_scorer   === awards.top_scorer)   pts += 10
+  if (secret.mvp          && secret.mvp          === awards.mvp)          pts += 10
+  if (secret.best_gk      && secret.best_gk      === awards.best_gk)      pts += 10
+  if (secret.young_player && secret.young_player === awards.young_player) pts += 10
   return pts
 }
 
@@ -123,7 +124,8 @@ export function computeStandings(
   profiles: Profile[],
   matches: Match[],
   predictions: Prediction[],
-  awards: Awards | null = null
+  awards: Awards | null = null,
+  secretByUser: Record<string, SecretPicks> = {}
 ): PlayerStats[] {
   const predsByUser: Record<string, Record<number, Prediction>> = {}
   for (const pred of predictions) {
@@ -150,8 +152,9 @@ export function computeStandings(
       if (partial) partialResults++
     }
 
-    const bonus = getBonus(profile, matches)
-    const awardPts = getAwardPoints(profile, awards)
+    const secret = secretByUser[profile.id] ?? null
+    const bonus = getBonus(profile.champion, secret, matches)
+    const awardPts = getAwardPoints(secret, awards)
     const totalPoints = matchPoints + bonus.champion + bonus.runner_up + bonus.third + awardPts
 
     return {

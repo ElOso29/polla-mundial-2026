@@ -4,14 +4,19 @@ export interface Profile {
   id: string
   username: string
   is_admin: boolean
-  champion: string | null
+  champion: string | null   // público (visible para todos)
+  created_at: string
+}
+
+// Elecciones privadas hasta que empieza el Mundial (tabla aparte con RLS).
+export interface SecretPicks {
+  user_id?: string
   runner_up: string | null
   third_place: string | null
   top_scorer: string | null
   mvp: string | null
   best_gk: string | null
   young_player: string | null
-  created_at: string
 }
 
 export interface Player {

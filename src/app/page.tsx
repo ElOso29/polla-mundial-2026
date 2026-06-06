@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { computeStandings } from '@/lib/scoring'
-import type { Profile, Match, Prediction, PlayerStats, Awards } from '@/types'
+import type { Profile, Match, Prediction, PlayerStats, Awards, SecretPicks } from '@/types'
 import { PRIZES } from '@/types'
 
 const MEDALS = ['🥇', '🥈', '🥉']
@@ -20,16 +20,19 @@ export default function HomePage() {
 
   const loadStandings = async () => {
     const supabase = createClient()
-    const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }, { data: counts }] = await Promise.all([
+    const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }, { data: counts }, { data: secrets }] = await Promise.all([
       supabase.from('profiles').select('*'),
       supabase.from('matches').select('*').order('match_number'),
       supabase.from('predictions').select('*'),
       supabase.from('awards').select('*').maybeSingle(),
       supabase.rpc('prediction_counts'),
+      supabase.from('secret_picks').select('*'),
     ])
     if (profiles && matches && predictions) {
+      const secretByUser: Record<string, SecretPicks> = {}
+      for (const s of (secrets ?? []) as SecretPicks[]) if (s.user_id) secretByUser[s.user_id] = s
       const table = computeStandings(
-        profiles as Profile[], matches as Match[], predictions as Prediction[], (awards as Awards) ?? null
+        profiles as Profile[], matches as Match[], predictions as Prediction[], (awards as Awards) ?? null, secretByUser
       )
       // Conteo de pronósticos por jugador (vía función segura, sin exponer el contenido)
       const countMap: Record<string, number> = {}

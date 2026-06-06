@@ -44,11 +44,12 @@ export default function PredictionsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth'); return }
 
-      const [{ data: profileData }, { data: matchData }, { data: predData }, { data: playerData }] = await Promise.all([
+      const [{ data: profileData }, { data: matchData }, { data: predData }, { data: playerData }, { data: secretData }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('matches').select('*').order('match_number'),
         supabase.from('predictions').select('*').eq('user_id', user.id),
         supabase.from('players').select('*').order('team'),
+        supabase.from('secret_picks').select('*').eq('user_id', user.id).maybeSingle(),
       ])
 
       if (playerData) setPlayers(playerData)
@@ -56,12 +57,12 @@ export default function PredictionsPage() {
         setProfile(profileData)
         setPicks({
           champion:     profileData.champion ?? '',
-          runner_up:    profileData.runner_up ?? '',
-          third_place:  profileData.third_place ?? '',
-          top_scorer:   profileData.top_scorer ?? '',
-          mvp:          profileData.mvp ?? '',
-          best_gk:      profileData.best_gk ?? '',
-          young_player: profileData.young_player ?? '',
+          runner_up:    secretData?.runner_up ?? '',
+          third_place:  secretData?.third_place ?? '',
+          top_scorer:   secretData?.top_scorer ?? '',
+          mvp:          secretData?.mvp ?? '',
+          best_gk:      secretData?.best_gk ?? '',
+          young_player: secretData?.young_player ?? '',
         })
       }
       if (matchData)   setMatches(matchData)
@@ -109,9 +110,26 @@ export default function PredictionsPage() {
     const merged = { ...picks, ...next }
     setPicks(merged)
     if (!profile) return
-    const { error } = await supabase.from('profiles').update(merged).eq('id', profile.id)
-    setPicksMsg(error ? 'Error al guardar' : '✓ Guardado')
-    if (!error) setProfile(p => p ? { ...p, ...merged } : p)
+    let failed = false
+    if ('champion' in next) {
+      const { error } = await supabase.from('profiles').update({ champion: merged.champion }).eq('id', profile.id)
+      if (error) failed = true
+      else setProfile(p => p ? { ...p, champion: merged.champion } : p)
+    }
+    const secretKeys = ['runner_up', 'third_place', 'top_scorer', 'mvp', 'best_gk', 'young_player'] as const
+    if (secretKeys.some(k => k in next)) {
+      const { error } = await supabase.from('secret_picks').upsert({
+        user_id:      profile.id,
+        runner_up:    merged.runner_up,
+        third_place:  merged.third_place,
+        top_scorer:   merged.top_scorer,
+        mvp:          merged.mvp,
+        best_gk:      merged.best_gk,
+        young_player: merged.young_player,
+      })
+      if (error) failed = true
+    }
+    setPicksMsg(failed ? 'Error al guardar' : '✓ Guardado')
     setTimeout(() => setPicksMsg(''), 2500)
   }
 
