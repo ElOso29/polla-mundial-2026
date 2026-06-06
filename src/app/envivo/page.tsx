@@ -59,7 +59,7 @@ export default function EnVivoPage() {
           {events.map(ev => {
             const live = ev.state === 'in'
             const finished = ev.state === 'post'
-            const kickoff = new Date(ev.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+            const kickoff = new Date(ev.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
             return (
               <div key={ev.id} className={`rounded-xl border p-4 ${live ? 'border-green-700/50 bg-green-900/5' : 'border-pitch-border bg-pitch-card'}`}>
                 <div className="flex items-center gap-3">

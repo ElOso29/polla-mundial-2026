@@ -294,7 +294,7 @@ export default function PredictionsPage() {
 
           const matchDate = match.match_date
             ? new Date(match.match_date).toLocaleDateString('es-CL', {
-                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false
               })
             : null
 

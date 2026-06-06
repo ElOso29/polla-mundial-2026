@@ -85,7 +85,7 @@ export default function HomePage() {
           <span className="text-gold font-semibold">$360.000 CLP</span>
         </p>
         <p className="text-gray-600 text-xs">
-          Actualizado: {lastUpdate.toLocaleTimeString('es-CL')}
+          Actualizado: {lastUpdate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
         </p>
       </div>
 
