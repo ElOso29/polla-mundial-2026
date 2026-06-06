@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id           UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username     TEXT UNIQUE NOT NULL,
   is_admin     BOOLEAN DEFAULT FALSE,
-  champion     TEXT,                      -- equipo elegido como campeón
+  champion     TEXT,                      -- equipo elegido como campeón (+25)
+  runner_up    TEXT,                      -- equipo elegido como subcampeón (+20)
+  third_place  TEXT,                      -- equipo elegido como 3er puesto (+10)
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 

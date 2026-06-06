@@ -17,9 +17,9 @@ export default function RulesPage() {
 
         <div className="grid grid-cols-3 gap-3 mt-4">
           {[
-            { medal: '🥇', place: '1er lugar', prize: PRIZES.first, pct: '50%' },
-            { medal: '🥈', place: '2do lugar', prize: PRIZES.second, pct: '30%' },
-            { medal: '🥉', place: '3er lugar', prize: PRIZES.third, pct: '20%' },
+            { medal: '🥇', place: '1er lugar', prize: PRIZES.first, pct: '70%' },
+            { medal: '🥈', place: '2do lugar', prize: PRIZES.second, pct: '20%' },
+            { medal: '🥉', place: '3er lugar', prize: PRIZES.third, pct: '10%' },
           ].map(({ medal, place, prize, pct }) => (
             <div key={place} className="text-center rounded-lg border border-pitch-border bg-pitch-card p-3">
               <div className="text-2xl mb-1">{medal}</div>
@@ -38,10 +38,10 @@ export default function RulesPage() {
         <h2 className="font-display text-2xl tracking-wide text-gold">⚽ PUNTAJE POR PARTIDO</h2>
         <div className="space-y-3">
           {[
-            { pts: '3', label: 'Resultado exacto', desc: 'Aciertas el marcador exacto de ambos equipos', color: 'text-gold' },
-            { pts: '1', label: 'Ganador correcto', desc: 'Aciertas qué equipo gana (sin importar el marcador)', color: 'text-blue-400' },
-            { pts: '1', label: 'Empate acertado', desc: 'Pronosticas empate y el partido termina en empate', color: 'text-blue-400' },
-            { pts: '0', label: 'Fallo completo', desc: 'No aciertas resultado ni ganador', color: 'text-gray-600' },
+            { pts: '5', label: 'Marcador exacto', desc: 'Aciertas el marcador exacto de ambos equipos (máximo del partido)', color: 'text-gold' },
+            { pts: '3', label: 'Ganador o empate', desc: 'Aciertas quién gana, o que terminó en empate', color: 'text-blue-400' },
+            { pts: '+1', label: 'Goles de un equipo', desc: 'Por CADA equipo cuyos goles exactos aciertes (se suma a los 3 del ganador)', color: 'text-blue-400' },
+            { pts: '0', label: 'Fallo', desc: 'No aciertas ni el ganador ni los goles de ningún equipo', color: 'text-gray-600' },
           ].map(({ pts, label, desc, color }) => (
             <div key={label} className="flex items-start gap-3">
               <span className={`font-display text-2xl w-8 text-center flex-shrink-0 ${color}`}>{pts}</span>
@@ -56,15 +56,15 @@ export default function RulesPage() {
 
       {/* Bonus campeón */}
       <section className="rounded-xl border border-pitch-border bg-pitch-card p-6 space-y-4">
-        <h2 className="font-display text-2xl tracking-wide text-gold">🏆 BONUS CAMPEÓN</h2>
+        <h2 className="font-display text-2xl tracking-wide text-gold">🏆 BONUS PODIO</h2>
         <p className="text-sm text-gray-400">
-          Al registrarte eliges tu campeón del torneo. No se puede cambiar una vez confirmado.
+          Al registrarte eliges campeón, subcampeón y 3er puesto del torneo. No se pueden cambiar una vez confirmados.
         </p>
         <div className="space-y-3">
           {[
-            { pts: '+5', label: 'Campeón', desc: 'Tu equipo gana el Mundial', color: 'text-gold' },
-            { pts: '+3', label: 'Finalista', desc: 'Tu equipo llega a la final pero pierde', color: 'text-gray-300' },
-            { pts: '+2', label: 'Semifinalista', desc: 'Tu equipo llega a semis pero no pasa', color: 'text-gray-400' },
+            { pts: '+25', label: 'Campeón', desc: 'Aciertas el campeón del Mundial', color: 'text-gold' },
+            { pts: '+20', label: 'Subcampeón', desc: 'Aciertas el finalista que pierde la final', color: 'text-gray-300' },
+            { pts: '+10', label: '3er puesto', desc: 'Aciertas quién gana el partido por el tercer lugar', color: 'text-gray-400' },
           ].map(({ pts, label, desc, color }) => (
             <div key={label} className="flex items-start gap-3">
               <span className={`font-display text-2xl w-10 text-center flex-shrink-0 ${color}`}>{pts}</span>

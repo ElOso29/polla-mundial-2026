@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { getMatchPoints } from '@/lib/scoring'
+import { getMatchPoints, getBonus } from '@/lib/scoring'
 import type { Match, Prediction, Profile, Stage } from '@/types'
 import { STAGE_LABELS } from '@/types'
 
@@ -60,11 +60,19 @@ export default function PlayerPage() {
   // Stats totales
   let totalPts = 0, exactCount = 0, partialCount = 0
   for (const match of matches) {
+    // No puntuar eliminatorias con equipos aún por definir
+    if (match.stage !== 'group' &&
+        (match.home_team.startsWith('W') || match.home_team.startsWith('L') ||
+         /^\d[A-L]$/.test(match.home_team))) continue
     const pred = preds[match.id]
     const { points, exact, partial } = getMatchPoints(match, pred)
     totalPts += points
     if (exact) exactCount++
     if (partial) partialCount++
+  }
+  if (player) {
+    const bonus = getBonus(player, matches)
+    totalPts += bonus.champion + bonus.runner_up + bonus.third
   }
 
   return (

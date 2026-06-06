@@ -2,6 +2,10 @@ import type { Match, Prediction, Profile, PlayerStats } from '@/types'
 
 // ============================================================
 // CÁLCULO DE PUNTAJE POR PARTIDO
+//   · Marcador exacto ............ 5 pts (máximo del partido)
+//   · Si NO es exacto, se acumulan:
+//       +3 acertar el ganador (o el empate)
+//       +1 por CADA equipo cuyos goles exactos aciertes
 // ============================================================
 
 export function getMatchPoints(
@@ -17,39 +21,56 @@ export function getMatchPoints(
   const predHome = pred.home_score
   const predAway = pred.away_score
 
-  // Exacto: ambos scores correctos
+  // Exacto: ambos marcadores correctos → 5 pts
   if (predHome === realHome && predAway === realAway) {
-    return { points: 3, exact: true, partial: false }
+    return { points: 5, exact: true, partial: false }
   }
 
-  // Parcial: ganador correcto o empate acertado
-  const realResult = Math.sign(realHome - realAway)
-  const predResult = Math.sign(predHome - predAway)
+  let points = 0
 
-  if (realResult === predResult) {
-    return { points: 1, exact: false, partial: true }
+  // +3 por acertar el resultado (ganador o empate)
+  if (Math.sign(predHome - predAway) === Math.sign(realHome - realAway)) {
+    points += 3
   }
 
-  return { points: 0, exact: false, partial: false }
+  // +1 por cada equipo cuyos goles aciertes
+  if (predHome === realHome) points += 1
+  if (predAway === realAway) points += 1
+
+  return { points, exact: false, partial: points > 0 }
 }
 
 // ============================================================
-// BONUS POR PRONÓSTICO DE CAMPEÓN / FINALISTAS / SEMIFINALISTAS
+// ¿Es un equipo "por definir" de fase eliminatoria?
+// (códigos tipo 1A, 2B, 3C, W73, L101 que el admin aún no reemplaza)
+// ============================================================
+function isPlaceholderTeam(name: string): boolean {
+  return name.startsWith('W') || name.startsWith('L') || /^\d[A-L]$/.test(name)
+}
+
+// ============================================================
+// BONUS POR CAMPEÓN / SUBCAMPEÓN / TERCER PUESTO
+//   · Campeón ...... 25 pts (ganador de la final)
+//   · Subcampeón ... 20 pts (perdedor de la final)
+//   · 3er puesto ... 10 pts (ganador del partido por el 3er lugar)
 // ============================================================
 
-export function getKnockoutBonus(
+export function getBonus(
   profile: Profile,
   matches: Match[]
-): { champion: number; finalist: number; semifinal: number } {
-  if (!profile.champion) return { champion: 0, finalist: 0, semifinal: 0 }
-
-  const champion = profile.champion
+): { champion: number; runner_up: number; third: number } {
   let championPts = 0
-  let finalistPts = 0
-  let semifinalPts = 0
+  let runnerPts = 0
+  let thirdPts = 0
 
+  // Final → campeón y subcampeón
   const finalMatch = matches.find(m => m.stage === 'final')
-  if (finalMatch && finalMatch.home_score !== null && finalMatch.away_score !== null) {
+  if (
+    finalMatch &&
+    finalMatch.home_score !== null &&
+    finalMatch.away_score !== null &&
+    !isPlaceholderTeam(finalMatch.home_team)
+  ) {
     const winner = finalMatch.home_score > finalMatch.away_score
       ? finalMatch.home_team
       : finalMatch.away_team
@@ -57,27 +78,26 @@ export function getKnockoutBonus(
       ? finalMatch.away_team
       : finalMatch.home_team
 
-    if (champion === winner) championPts = 5
-    else if (champion === loser) finalistPts = 3
+    if (profile.champion && profile.champion === winner) championPts = 25
+    if (profile.runner_up && profile.runner_up === loser) runnerPts = 20
   }
 
-  const semiMatches = matches.filter(m => m.stage === 'sf')
-  if (semiMatches.length === 2) {
-    const semiLosers: string[] = []
-    for (const semi of semiMatches) {
-      if (semi.home_score !== null && semi.away_score !== null) {
-        const loser = semi.home_score > semi.away_score
-          ? semi.away_team
-          : semi.home_team
-        semiLosers.push(loser)
-      }
-    }
-    if (semiLosers.includes(champion) && finalistPts === 0 && championPts === 0) {
-      semifinalPts = 2
-    }
+  // Partido por el 3er lugar → tercer puesto
+  const thirdMatch = matches.find(m => m.stage === '3rd')
+  if (
+    thirdMatch &&
+    thirdMatch.home_score !== null &&
+    thirdMatch.away_score !== null &&
+    !isPlaceholderTeam(thirdMatch.home_team)
+  ) {
+    const thirdWinner = thirdMatch.home_score > thirdMatch.away_score
+      ? thirdMatch.home_team
+      : thirdMatch.away_team
+
+    if (profile.third_place && profile.third_place === thirdWinner) thirdPts = 10
   }
 
-  return { champion: championPts, finalist: finalistPts, semifinal: semifinalPts }
+  return { champion: championPts, runner_up: runnerPts, third: thirdPts }
 }
 
 // ============================================================
@@ -97,44 +117,40 @@ export function computeStandings(
 
   const standings: PlayerStats[] = profiles.map(profile => {
     const userPreds = predsByUser[profile.id] ?? {}
-    let totalPoints = 0
+    let matchPoints = 0
     let exactResults = 0
     let partialResults = 0
     let matchesPredicted = 0
 
     for (const match of matches) {
-      if (match.stage === 'r32' || match.stage === 'r16' ||
-          match.stage === 'qf'  || match.stage === 'sf'  ||
-          match.stage === '3rd' || match.stage === 'final') {
-        // Solo se puntúan partidos que ya tienen equipos reales
-        if (match.home_team.startsWith('W') || match.home_team.startsWith('L') ||
-            match.home_team.match(/^\d[A-L]$/)) continue
-      }
+      // No puntuar partidos de eliminatoria cuyos equipos aún no se definen
+      if (match.stage !== 'group' && isPlaceholderTeam(match.home_team)) continue
 
       const pred = userPreds[match.id]
       if (pred) matchesPredicted++
       const { points, exact, partial } = getMatchPoints(match, pred)
-      totalPoints += points
+      matchPoints += points
       if (exact) exactResults++
       if (partial) partialResults++
     }
 
-    const bonus = getKnockoutBonus(profile, matches)
-    totalPoints += bonus.champion + bonus.finalist + bonus.semifinal
+    const bonus = getBonus(profile, matches)
+    const totalPoints = matchPoints + bonus.champion + bonus.runner_up + bonus.third
 
     return {
       profile,
-      total_points:    totalPoints,
-      exact_results:   exactResults,
-      partial_results: partialResults,
-      champion_pts:    bonus.champion,
-      finalist_pts:    bonus.finalist,
-      semifinal_pts:   bonus.semifinal,
+      total_points:     totalPoints,
+      match_points:     matchPoints,
+      exact_results:    exactResults,
+      partial_results:  partialResults,
+      champion_pts:     bonus.champion,
+      runner_up_pts:    bonus.runner_up,
+      third_pts:        bonus.third,
       matches_predicted: matchesPredicted,
     }
   })
 
-  // Ordenar: puntos totales → exactos → parciales → nombre
+  // Desempate: puntos totales → exactos → parciales → nombre
   return standings.sort((a, b) => {
     if (b.total_points !== a.total_points) return b.total_points - a.total_points
     if (b.exact_results !== a.exact_results) return b.exact_results - a.exact_results

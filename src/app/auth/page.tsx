@@ -24,6 +24,8 @@ export default function AuthPage() {
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
   const [champion, setChampion] = useState('')
+  const [runnerUp, setRunnerUp] = useState('')
+  const [thirdPlace, setThirdPlace] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
   const router = useRouter()
@@ -44,6 +46,11 @@ export default function AuthPage() {
     e.preventDefault()
     if (!registrationOpen) { setError('El plazo de inscripción ha cerrado.'); return }
     if (!champion)         { setError('Debes elegir un campeón.'); return }
+    if (!runnerUp)         { setError('Debes elegir un subcampeón.'); return }
+    if (!thirdPlace)       { setError('Debes elegir un 3er puesto.'); return }
+    if (new Set([champion, runnerUp, thirdPlace]).size < 3) {
+      setError('Campeón, subcampeón y 3er puesto deben ser equipos distintos.'); return
+    }
     if (username.length < 3) { setError('El nombre de usuario debe tener al menos 3 caracteres.'); return }
 
     setLoading(true); setError('')
@@ -66,6 +73,8 @@ export default function AuthPage() {
         id: data.user.id,
         username,
         champion,
+        runner_up: runnerUp,
+        third_place: thirdPlace,
       })
     }
     router.push('/predictions')
@@ -146,23 +155,55 @@ export default function AuthPage() {
         </div>
 
         {mode === 'register' && (
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">
-              🏆 Elige tu CAMPEÓN{' '}
-              <span className="text-gold text-xs">(+5 pts si aciertas — no se puede cambiar)</span>
-            </label>
-            <select
-              value={champion}
-              onChange={e => setChampion(e.target.value)}
-              required
-              className="w-full bg-pitch border border-pitch-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
-            >
-              <option value="">Selecciona un país...</option>
-              {TEAMS_2026.map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
+          <>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                🥇 Elige tu CAMPEÓN{' '}
+                <span className="text-gold text-xs">(+25 pts — no se puede cambiar)</span>
+              </label>
+              <select
+                value={champion}
+                onChange={e => setChampion(e.target.value)}
+                required
+                className="w-full bg-pitch border border-pitch-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
+              >
+                <option value="">Selecciona un país...</option>
+                {TEAMS_2026.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                🥈 Elige tu SUBCAMPEÓN{' '}
+                <span className="text-gold text-xs">(+20 pts)</span>
+              </label>
+              <select
+                value={runnerUp}
+                onChange={e => setRunnerUp(e.target.value)}
+                required
+                className="w-full bg-pitch border border-pitch-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
+              >
+                <option value="">Selecciona un país...</option>
+                {TEAMS_2026.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                🥉 Elige tu 3er PUESTO{' '}
+                <span className="text-gold text-xs">(+10 pts)</span>
+              </label>
+              <select
+                value={thirdPlace}
+                onChange={e => setThirdPlace(e.target.value)}
+                required
+                className="w-full bg-pitch border border-pitch-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
+              >
+                <option value="">Selecciona un país...</option>
+                {TEAMS_2026.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </>
         )}
 
         {error && (
@@ -189,8 +230,9 @@ export default function AuthPage() {
         <div className="rounded-xl border border-pitch-border bg-pitch-card/50 p-4 text-xs text-gray-500 space-y-1">
           <p className="text-gray-400 font-semibold">Resumen de la polla</p>
           <p>💰 Bote: $360.000 CLP (12 × $30.000)</p>
-          <p>🥇 1er lugar: $180.000 · 🥈 2do: $108.000 · 🥉 3ro: $72.000</p>
-          <p>⚽ Exacto = 3pts · Ganador/Empate = 1pt · Error = 0pts</p>
+          <p>🥇 1er lugar: $252.000 · 🥈 2do: $72.000 · 🥉 3ro: $36.000</p>
+          <p>⚽ Exacto = 5pts · Ganador = 3pts · Goles de un equipo = 1pt c/u</p>
+          <p>🏆 Campeón +25 · Subcampeón +20 · 3er puesto +10</p>
           <p>📅 Plazo de inscripción: 11 de junio 2026</p>
         </div>
       )}

@@ -5,6 +5,8 @@ export interface Profile {
   username: string
   is_admin: boolean
   champion: string | null
+  runner_up: string | null
+  third_place: string | null
   created_at: string
 }
 
@@ -35,11 +37,12 @@ export interface Prediction {
 export interface PlayerStats {
   profile: Profile
   total_points: number
-  exact_results: number   // resultado exacto (ambos scores correctos)
-  partial_results: number // ganador/empate correcto sin exacto
-  champion_pts: number
-  finalist_pts: number
-  semifinal_pts: number
+  match_points: number    // puntos solo de partidos
+  exact_results: number   // resultado exacto (5 pts)
+  partial_results: number // acertó algo (ganador y/o goles) sin ser exacto
+  champion_pts: number    // 25
+  runner_up_pts: number   // 20
+  third_pts: number       // 10
   matches_predicted: number
 }
 
@@ -55,7 +58,7 @@ export const STAGE_LABELS: Record<Stage, string> = {
 
 export const PRIZE_POOL = 360_000 // CLP
 export const PRIZES = {
-  first:  180_000, // 50%
-  second: 108_000, // 30%
-  third:   72_000, // 20%
+  first:  252_000, // 70%
+  second:  72_000, // 20%
+  third:   36_000, // 10%
 }
