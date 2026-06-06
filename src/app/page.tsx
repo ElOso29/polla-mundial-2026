@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { computeStandings } from '@/lib/scoring'
+import Countdown from '@/components/Countdown'
 import type { Profile, Match, Prediction, PlayerStats, Awards, SecretPicks } from '@/types'
 import { PRIZES } from '@/types'
 
@@ -65,6 +66,13 @@ export default function HomePage() {
 
   const totalPlayers = standings.length
 
+  const championCounts = Object.entries(
+    standings.reduce<Record<string, number>>((acc, s) => {
+      if (s.profile.champion) acc[s.profile.champion] = (acc[s.profile.champion] ?? 0) + 1
+      return acc
+    }, {})
+  ).sort((a, b) => b[1] - a[1])
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -80,6 +88,8 @@ export default function HomePage() {
           Actualizado: {lastUpdate.toLocaleTimeString('es-CL')}
         </p>
       </div>
+
+      <Countdown />
 
       {/* Podio top 3 */}
       {standings.length >= 3 && (
@@ -187,6 +197,20 @@ export default function HomePage() {
           </table>
         </div>
       </div>
+
+      {/* Campeones elegidos */}
+      {championCounts.length > 0 && (
+        <div className="rounded-xl border border-pitch-border bg-pitch-card p-4">
+          <h2 className="font-display text-lg tracking-wide text-gold mb-3">🏆 CAMPEONES ELEGIDOS</h2>
+          <div className="flex flex-wrap gap-2">
+            {championCounts.map(([team, n]) => (
+              <span key={team} className="text-xs bg-pitch border border-pitch-border rounded-full px-3 py-1 text-gray-300">
+                {team} <span className="text-gold font-bold">×{n}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* CTA para registrarse */}
       {standings.length < 12 && (
