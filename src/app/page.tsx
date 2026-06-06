@@ -55,6 +55,7 @@ export default function HomePage() {
       .channel('standings-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, loadStandings)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'predictions' }, loadStandings)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'awards' }, loadStandings)
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }

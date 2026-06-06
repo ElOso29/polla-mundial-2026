@@ -63,6 +63,7 @@ export default function Navigation() {
         {/* Desktop links */}
         <div className="hidden sm:flex items-center gap-6">
           {navLink('/', 'Tabla')}
+          {navLink('/fixture', 'Fixture')}
           {navLink('/rules', 'Reglas')}
           {profile && navLink('/predictions', 'Mis Pronósticos')}
           {profile?.is_admin && navLink('/admin', 'Admin')}
@@ -111,6 +112,7 @@ export default function Navigation() {
       {menuOpen && (
         <div className="sm:hidden bg-pitch-card border-t border-pitch-border px-4 py-4 flex flex-col gap-4">
           {navLink('/', 'Tabla')}
+          {navLink('/fixture', 'Fixture')}
           {navLink('/rules', 'Reglas')}
           {profile && navLink('/predictions', 'Mis Pronósticos')}
           {profile?.is_admin && navLink('/admin', 'Admin')}

@@ -67,7 +67,14 @@ export default function AdminPage() {
     if (!d || d.home === '' || d.away === '') return
     const homeScore = parseInt(d.home)
     const awayScore = parseInt(d.away)
-    if (isNaN(homeScore) || isNaN(awayScore)) return
+    if (
+      isNaN(homeScore) || isNaN(awayScore) ||
+      homeScore < 0 || awayScore < 0 || homeScore > 30 || awayScore > 30
+    ) {
+      setMessages(m => ({ ...m, [matchId]: 'Marcador inválido (0–30)' }))
+      setTimeout(() => setMessages(m => ({ ...m, [matchId]: '' })), 2500)
+      return
+    }
 
     setSaving(s => ({ ...s, [matchId]: true }))
     setMessages(m => ({ ...m, [matchId]: '' }))

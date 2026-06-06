@@ -16,10 +16,21 @@ export default function AuthPage() {
   const [thirdPlace, setThirdPlace] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+  const [info, setInfo]       = useState('')
   const router = useRouter()
   const supabase = createClient()
 
   const registrationOpen = new Date() < PICKS_DEADLINE
+
+  const handleForgot = async () => {
+    setError(''); setInfo('')
+    if (!email) { setError('Escribe tu email arriba y vuelve a tocar el enlace.'); return }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset`,
+    })
+    if (error) setError(error.message)
+    else setInfo('Te enviamos un correo para restablecer tu contraseña. Revisa tu bandeja (y la carpeta de spam).')
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,7 +99,7 @@ export default function AuthPage() {
         {(['login', 'register'] as const).map(m => (
           <button
             key={m}
-            onClick={() => { setMode(m); setError('') }}
+            onClick={() => { setMode(m); setError(''); setInfo('') }}
             className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
               mode === m
                 ? 'bg-gold text-pitch'
@@ -150,7 +161,7 @@ export default function AuthPage() {
             <div>
               <label className="block text-xs text-gray-400 mb-1">
                 🥇 Elige tu CAMPEÓN{' '}
-                <span className="text-gold text-xs">(+25 pts — no se puede cambiar)</span>
+                <span className="text-gold text-xs">(+25 pts — editable hasta el cierre: 11 jun 14:00)</span>
               </label>
               <TeamPicker teams={TEAMS_2026} value={champion} onChange={setChampion} />
             </div>
@@ -178,6 +189,11 @@ export default function AuthPage() {
             {error}
           </div>
         )}
+        {info && (
+          <div className="rounded-lg bg-green-900/20 border border-green-800/50 px-3 py-2 text-sm text-green-400">
+            {info}
+          </div>
+        )}
 
         <button
           type="submit"
@@ -191,6 +207,16 @@ export default function AuthPage() {
               : 'Crear cuenta y elegir pronósticos →'
           }
         </button>
+
+        {mode === 'login' && (
+          <button
+            type="button"
+            onClick={handleForgot}
+            className="w-full text-xs text-gray-500 hover:text-gold transition-colors"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+        )}
       </form>
 
       {mode === 'register' && (
