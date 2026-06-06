@@ -20,6 +20,10 @@ export default function AdminPage() {
   const [activeGroup, setActiveGroup] = useState<string>('A')
   const [players,   setPlayers]   = useState<Player[]>([])
   const [awards,    setAwards]    = useState({ top_scorer: '', mvp: '', best_gk: '', young_player: '' })
+  const [importDate, setImportDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState('')
+  const [preview, setPreview] = useState<{ id: number; home_team: string; away_team: string; home: number; away: number; already: boolean }[]>([])
   const [loading,   setLoading]   = useState(true)
   const router = useRouter()
   const supabase = createClient()
@@ -126,6 +130,47 @@ export default function AdminPage() {
     await supabase.from('awards').update(merged).eq('id', 1)
   }
 
+  const importFromEspn = async () => {
+    setImporting(true); setImportMsg(''); setPreview([])
+    const d = importDate.replaceAll('-', '')
+    try {
+      const res = await fetch(`/api/scores?date=${d}`)
+      const data = await res.json()
+      const finished = (data.events ?? []).filter((e: { state: string }) => e.state === 'post')
+      const matched: typeof preview = []
+      for (const ev of finished) {
+        const m = matches.find(mm => mm.home_team === ev.home && mm.away_team === ev.away)
+        if (m && ev.homeScore != null && ev.awayScore != null) {
+          matched.push({
+            id: m.id, home_team: m.home_team, away_team: m.away_team,
+            home: parseInt(ev.homeScore), away: parseInt(ev.awayScore),
+            already: m.home_score !== null,
+          })
+        }
+      }
+      setPreview(matched)
+      setImportMsg(matched.length
+        ? `${matched.length} partido(s) finalizados encontrados.`
+        : 'No se encontraron partidos finalizados que coincidan con tu fixture en esa fecha.')
+    } catch {
+      setImportMsg('Error al consultar ESPN. Intenta de nuevo.')
+    }
+    setImporting(false)
+  }
+
+  const saveAllImported = async () => {
+    for (const p of preview) {
+      await supabase.from('matches')
+        .update({ home_score: p.home, away_score: p.away, locked: true })
+        .eq('id', p.id)
+      setMatches(prev => prev.map(m =>
+        m.id === p.id ? { ...m, home_score: p.home, away_score: p.away, locked: true } : m
+      ))
+    }
+    setImportMsg(`✓ ${preview.length} resultado(s) guardados.`)
+    setPreview([])
+  }
+
   if (loading) return <div className="text-center py-20 text-gray-500 animate-pulse">Cargando...</div>
   if (!profile?.is_admin) return null
 
@@ -185,6 +230,51 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Importar resultados de ESPN */}
+      <div className="rounded-xl border border-pitch-border bg-pitch-card p-4 space-y-3">
+        <h2 className="font-display text-lg tracking-wide text-gold">📥 IMPORTAR RESULTADOS (ESPN)</h2>
+        <div className="flex flex-wrap items-end gap-2">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Fecha</label>
+            <input
+              type="date"
+              value={importDate}
+              onChange={e => setImportDate(e.target.value)}
+              className="bg-pitch border border-pitch-border rounded-lg px-2 py-2 text-sm text-gray-100"
+            />
+          </div>
+          <button
+            onClick={importFromEspn}
+            disabled={importing}
+            className="px-3 py-2 bg-pitch border border-gold/40 text-gold text-sm rounded-lg hover:bg-gold/10 disabled:opacity-50"
+          >
+            {importing ? 'Buscando...' : 'Buscar en ESPN'}
+          </button>
+        </div>
+        {importMsg && <p className="text-xs text-gray-400">{importMsg}</p>}
+        {preview.length > 0 && (
+          <div className="space-y-1">
+            {preview.map(p => (
+              <div key={p.id} className="flex items-center justify-between gap-2 text-sm border-t border-pitch-border/40 pt-1.5">
+                <span className="text-gray-300">
+                  {p.home_team} <span className="text-gold font-bold font-mono">{p.home}–{p.away}</span> {p.away_team}
+                </span>
+                {p.already && <span className="text-xs text-yellow-500 flex-shrink-0">ya tenía resultado</span>}
+              </div>
+            ))}
+            <button
+              onClick={saveAllImported}
+              className="mt-2 w-full px-3 py-2 bg-gold text-pitch text-sm font-bold rounded-lg hover:bg-gold-light transition-colors"
+            >
+              Guardar {preview.length} resultado(s)
+            </button>
+          </div>
+        )}
+        <p className="text-xs text-gray-600">
+          Trae los marcadores <span className="font-semibold">finalizados</span> de ESPN de esa fecha y los empareja con tu fixture (fase de grupos, y eliminatoria si ya cargaste los equipos). Revisa la lista y guarda.
+        </p>
       </div>
 
       {/* Stage tabs */}
