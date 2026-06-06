@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getMatchPoints } from '@/lib/scoring'
 import { TEAMS_2026 } from '@/lib/teams'
-import type { Match, Prediction, Profile, Stage } from '@/types'
+import type { Match, Prediction, Profile, Stage, Player } from '@/types'
 import { STAGE_LABELS, PICKS_DEADLINE, MATCH_LOCK_MINUTES } from '@/types'
 
 type PredMap = Record<number, { home: string; away: string }>
@@ -27,7 +27,11 @@ export default function PredictionsPage() {
   const [activeGroup, setActiveGroup] = useState<string>('A')
   const [saving,     setSaving]     = useState<Record<number, boolean>>({})
   const [loading,    setLoading]    = useState(true)
-  const [picks,      setPicks]      = useState({ champion: '', runner_up: '', third_place: '' })
+  const [players,    setPlayers]    = useState<Player[]>([])
+  const [picks,      setPicks]      = useState({
+    champion: '', runner_up: '', third_place: '',
+    top_scorer: '', mvp: '', best_gk: '', young_player: '',
+  })
   const [picksMsg,   setPicksMsg]   = useState('')
   const router = useRouter()
 
@@ -38,18 +42,24 @@ export default function PredictionsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth'); return }
 
-      const [{ data: profileData }, { data: matchData }, { data: predData }] = await Promise.all([
+      const [{ data: profileData }, { data: matchData }, { data: predData }, { data: playerData }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('matches').select('*').order('match_number'),
         supabase.from('predictions').select('*').eq('user_id', user.id),
+        supabase.from('players').select('*').order('team'),
       ])
 
+      if (playerData) setPlayers(playerData)
       if (profileData) {
         setProfile(profileData)
         setPicks({
-          champion:    profileData.champion ?? '',
-          runner_up:   profileData.runner_up ?? '',
-          third_place: profileData.third_place ?? '',
+          champion:     profileData.champion ?? '',
+          runner_up:    profileData.runner_up ?? '',
+          third_place:  profileData.third_place ?? '',
+          top_scorer:   profileData.top_scorer ?? '',
+          mvp:          profileData.mvp ?? '',
+          best_gk:      profileData.best_gk ?? '',
+          young_player: profileData.young_player ?? '',
         })
       }
       if (matchData)   setMatches(matchData)
@@ -110,6 +120,16 @@ export default function PredictionsPage() {
   if (!profile) return null
 
   const picksOpen = new Date() < PICKS_DEADLINE
+
+  const goalkeepers = players.filter(p => p.position === 'GK')
+  const playerOptgroups = (list: Player[]) =>
+    [...new Set(list.map(p => p.team))].sort().map(team => (
+      <optgroup key={team} label={team}>
+        {list.filter(p => p.team === team).map(p => (
+          <option key={p.id} value={p.name}>{p.name}</option>
+        ))}
+      </optgroup>
+    ))
 
   const stages = STAGES_ORDER.filter(s => matches.some(m => m.stage === s))
   const groups = [...new Set(
@@ -176,6 +196,39 @@ export default function PredictionsPage() {
               )}
             </div>
           ))}
+        </div>
+
+        {/* Premios individuales */}
+        <div className="border-t border-gold/10 pt-3">
+          <p className="text-xs text-gray-400 mb-2">⭐ Premios individuales (+10 c/u)</p>
+          {players.length === 0 ? (
+            <p className="text-xs text-gray-600">La lista de jugadores se está cargando… disponible pronto.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {([
+                { key: 'top_scorer',   label: '⚽ Goleador',      list: players },
+                { key: 'mvp',          label: '⭐ MVP',           list: players },
+                { key: 'best_gk',      label: '🧤 Mejor arquero', list: goalkeepers },
+                { key: 'young_player', label: '🌱 Jugador joven', list: players },
+              ] as const).map(({ key, label, list }) => (
+                <div key={key}>
+                  <label className="block text-xs text-gray-400 mb-1">{label}</label>
+                  {picksOpen ? (
+                    <select
+                      value={picks[key]}
+                      onChange={e => savePicks({ [key]: e.target.value })}
+                      className="w-full bg-pitch border border-pitch-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
+                    >
+                      <option value="">Sin elegir...</option>
+                      {playerOptgroups(list)}
+                    </select>
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-200 py-2">{picks[key] || '—'}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

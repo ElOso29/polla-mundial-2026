@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import type { Match, Profile, Stage } from '@/types'
+import type { Match, Profile, Stage, Player, Awards } from '@/types'
 import { STAGE_LABELS } from '@/types'
 
 type ResultDraft = Record<number, { home: string; away: string }>
@@ -17,6 +17,8 @@ export default function AdminPage() {
   const [messages,  setMessages]  = useState<Record<number, string>>({})
   const [activeStage, setActiveStage] = useState<Stage>('group')
   const [activeGroup, setActiveGroup] = useState<string>('A')
+  const [players,   setPlayers]   = useState<Player[]>([])
+  const [awards,    setAwards]    = useState({ top_scorer: '', mvp: '', best_gk: '', young_player: '' })
   const [loading,   setLoading]   = useState(true)
   const router = useRouter()
   const supabase = createClient()
@@ -31,6 +33,16 @@ export default function AdminPage() {
 
       if (!profileData?.is_admin) { router.push('/'); return }
       setProfile(profileData)
+
+      const { data: playerData } = await supabase.from('players').select('*').order('team')
+      if (playerData) setPlayers(playerData)
+      const { data: awardData } = await supabase.from('awards').select('*').maybeSingle()
+      if (awardData) setAwards({
+        top_scorer:   awardData.top_scorer ?? '',
+        mvp:          awardData.mvp ?? '',
+        best_gk:      awardData.best_gk ?? '',
+        young_player: awardData.young_player ?? '',
+      })
 
       const { data: matchData } = await supabase
         .from('matches').select('*').order('match_number')
@@ -88,8 +100,24 @@ export default function AdminPage() {
     setMatches(prev => prev.map(m => m.id === matchId ? { ...m, locked } : m))
   }
 
+  const saveAward = async (next: Partial<typeof awards>) => {
+    const merged = { ...awards, ...next }
+    setAwards(merged)
+    await supabase.from('awards').update(merged).eq('id', 1)
+  }
+
   if (loading) return <div className="text-center py-20 text-gray-500 animate-pulse">Cargando...</div>
   if (!profile?.is_admin) return null
+
+  const goalkeepers = players.filter(p => p.position === 'GK')
+  const playerOptgroups = (list: Player[]) =>
+    [...new Set(list.map(p => p.team))].sort().map(team => (
+      <optgroup key={team} label={team}>
+        {list.filter(p => p.team === team).map(p => (
+          <option key={p.id} value={p.name}>{p.name}</option>
+        ))}
+      </optgroup>
+    ))
 
   const stages = STAGES_ORDER.filter(s => matches.some(m => m.stage === s))
   const groups = [...new Set(
@@ -115,6 +143,38 @@ export default function AdminPage() {
 
       <div className="rounded-xl border border-yellow-900/40 bg-yellow-900/10 p-3 text-xs text-yellow-400">
         ⚠️ Esta página es solo visible para admins. Los resultados que ingreses aquí se usan para calcular puntos en tiempo real.
+      </div>
+
+      {/* Premios individuales (resultado real) */}
+      <div className="rounded-xl border border-gold/30 bg-gold/5 p-4 space-y-3">
+        <h2 className="font-display text-lg tracking-wide text-gold">⭐ PREMIOS INDIVIDUALES (resultado)</h2>
+        <p className="text-xs text-gray-500">
+          Ingresa quién ganó cada premio al final del torneo. Otorga +10 a quien lo haya acertado. Se guarda al elegir.
+        </p>
+        {players.length === 0 ? (
+          <p className="text-xs text-gray-600">Aún no hay jugadores cargados en la base.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {([
+              { key: 'top_scorer',   label: '⚽ Goleador',      list: players },
+              { key: 'mvp',          label: '⭐ MVP',           list: players },
+              { key: 'best_gk',      label: '🧤 Mejor arquero', list: goalkeepers },
+              { key: 'young_player', label: '🌱 Jugador joven', list: players },
+            ] as const).map(({ key, label, list }) => (
+              <div key={key}>
+                <label className="block text-xs text-gray-400 mb-1">{label}</label>
+                <select
+                  value={awards[key]}
+                  onChange={e => saveAward({ [key]: e.target.value })}
+                  className="w-full bg-pitch border border-pitch-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
+                >
+                  <option value="">Sin definir...</option>
+                  {playerOptgroups(list)}
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Stage tabs */}
