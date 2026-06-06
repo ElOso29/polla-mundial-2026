@@ -123,20 +123,20 @@ export default function RulesPage() {
         <h2 className="font-display text-2xl tracking-wide text-gold">📅 PLAZOS IMPORTANTES</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between border-b border-pitch-border pb-2">
-            <span className="text-gray-400">Inscripción y elección de campeón</span>
-            <span className="text-gray-200 font-semibold">Hasta el 11 jun 2026</span>
+            <span className="text-gray-400">Inscripción y elecciones (campeón, premios)</span>
+            <span className="text-gray-200 font-semibold">Hasta 11 jun 2026, 14:00</span>
           </div>
           <div className="flex justify-between border-b border-pitch-border pb-2">
             <span className="text-gray-400">Pronósticos fase de grupos</span>
-            <span className="text-gray-200 font-semibold">Antes de cada partido</span>
+            <span className="text-gray-200 font-semibold">Hasta 10 min antes del partido</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Pronósticos fase eliminatoria</span>
-            <span className="text-gray-200 font-semibold">Antes de cada partido</span>
+            <span className="text-gray-200 font-semibold">Hasta 10 min antes del partido</span>
           </div>
         </div>
-        <p className="text-xs text-gray-600">
-          Los pronósticos se bloquean automáticamente al iniciar cada partido.
+        <p className="text-xs text-gold">
+          ⏱️ Cada pronóstico se cierra automáticamente <span className="font-semibold">10 minutos antes</span> de que empiece ese partido. Después de eso ya no se puede poner ni cambiar el marcador.
         </p>
       </section>
     </div>
