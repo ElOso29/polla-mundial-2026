@@ -3,16 +3,17 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
-// Equipos del Mundial 2026 (para elegir campeón)
+// Las 48 selecciones clasificadas al Mundial 2026 (sorteo oficial FIFA).
+// Los nombres coinciden EXACTAMENTE con los del fixture para que el
+// bonus de campeón se calcule bien.
 const TEAMS_2026 = [
-  'Alemania','Argentina','Arabia Saudita','Australia','Bélgica','Bolivia',
-  'Brasil','Camerún','Canadá','Chile','Colombia','Corea del Sur',
-  'Côte d\'Ivoire','Croacia','Ecuador','España','Estados Unidos','Francia',
-  'Ghana','Honduras','Inglaterra','Irán','Iraq','Japón','Jamaica',
-  'Marruecos','México','Nigeria','Países Bajos','Panamá','Paraguay',
-  'Perú','Polonia','Portugal','República Checa','Rumania','Senegal',
-  'Serbia','Suiza','Turquía','Uganda','Uruguay','Uzbekistán','Venezuela',
-  'Austria','Suecia','Escocia','Nueva Zelanda','Eslovenia',
+  'Alemania','Arabia Saudita','Argelia','Argentina','Australia','Austria',
+  'Bélgica','Bosnia y Herzegovina','Brasil','Cabo Verde','Canadá','Colombia',
+  'Corea del Sur','Costa de Marfil','Croacia','Curazao','Ecuador','Egipto',
+  'Escocia','España','Francia','Ghana','Haití','Inglaterra','Irán','Iraq',
+  'Japón','Jordania','Marruecos','México','Noruega','Nueva Zelanda','Países Bajos',
+  'Panamá','Paraguay','Portugal','Qatar','RD Congo','Rep. Checa','Senegal',
+  'Sudáfrica','Suecia','Suiza','Túnez','Turquía','USA','Uruguay','Uzbekistán',
 ].sort()
 
 const REGISTRATION_DEADLINE = new Date('2026-06-11T00:00:00-05:00')
