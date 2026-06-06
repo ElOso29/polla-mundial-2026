@@ -7,7 +7,26 @@ export interface Profile {
   champion: string | null
   runner_up: string | null
   third_place: string | null
+  top_scorer: string | null
+  mvp: string | null
+  best_gk: string | null
+  young_player: string | null
   created_at: string
+}
+
+export interface Player {
+  id: number
+  team: string
+  name: string
+  position: string | null   // GK / DEF / MID / FWD
+}
+
+// Premios individuales reales del torneo (los ingresa el admin al final).
+export interface Awards {
+  top_scorer: string | null
+  mvp: string | null
+  best_gk: string | null
+  young_player: string | null
 }
 
 export interface Match {
@@ -43,6 +62,7 @@ export interface PlayerStats {
   champion_pts: number    // 25
   runner_up_pts: number   // 20
   third_pts: number       // 10
+  award_pts: number       // goleador + MVP + arquero + joven (10 c/u)
   matches_predicted: number
 }
 

@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { getMatchPoints, getBonus } from '@/lib/scoring'
-import type { Match, Prediction, Profile, Stage } from '@/types'
+import { getMatchPoints, getBonus, getAwardPoints } from '@/lib/scoring'
+import type { Match, Prediction, Profile, Stage, Awards } from '@/types'
 import { STAGE_LABELS } from '@/types'
 
 const STAGES_ORDER: Stage[] = ['group', 'r32', 'r16', 'qf', 'sf', '3rd', 'final']
@@ -16,19 +16,22 @@ export default function PlayerPage() {
   const [preds,     setPreds]     = useState<Record<number, Prediction>>({})
   const [activeStage, setActiveStage] = useState<Stage>('group')
   const [activeGroup, setActiveGroup] = useState<string>('A')
+  const [awards,    setAwards]    = useState<Awards | null>(null)
   const [loading,   setLoading]   = useState(true)
   const [notFound,  setNotFound]  = useState(false)
 
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
-      const [{ data: playerData }, { data: matchData }, { data: predData }] = await Promise.all([
+      const [{ data: playerData }, { data: matchData }, { data: predData }, { data: awardsData }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', id).single(),
         supabase.from('matches').select('*').order('match_number'),
         supabase.from('predictions').select('*').eq('user_id', id),
+        supabase.from('awards').select('*').maybeSingle(),
       ])
       if (!playerData) { setNotFound(true); setLoading(false); return }
       setPlayer(playerData)
+      setAwards((awardsData as Awards) ?? null)
       if (matchData) setMatches(matchData)
       if (predData) {
         const map: Record<number, Prediction> = {}
@@ -73,6 +76,7 @@ export default function PlayerPage() {
   if (player) {
     const bonus = getBonus(player, matches)
     totalPts += bonus.champion + bonus.runner_up + bonus.third
+    totalPts += getAwardPoints(player, awards)
   }
 
   return (
@@ -90,6 +94,12 @@ export default function PlayerPage() {
             {player!.champion    && <span>🥇 {player!.champion}</span>}
             {player!.runner_up   && <span>🥈 {player!.runner_up}</span>}
             {player!.third_place && <span>🥉 {player!.third_place}</span>}
+          </div>
+          <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+            {player!.top_scorer   && <span>⚽ {player!.top_scorer}</span>}
+            {player!.mvp          && <span>⭐ {player!.mvp}</span>}
+            {player!.best_gk      && <span>🧤 {player!.best_gk}</span>}
+            {player!.young_player && <span>🌱 {player!.young_player}</span>}
           </div>
         </div>
         <div className="flex gap-4 text-center">

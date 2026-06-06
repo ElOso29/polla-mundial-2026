@@ -1,4 +1,4 @@
-import type { Match, Prediction, Profile, PlayerStats } from '@/types'
+import type { Match, Prediction, Profile, PlayerStats, Awards } from '@/types'
 
 // ============================================================
 // CÁLCULO DE PUNTAJE POR PARTIDO
@@ -101,13 +101,29 @@ export function getBonus(
 }
 
 // ============================================================
+// PREMIOS INDIVIDUALES (+10 por cada acierto)
+//   · Goleador · MVP · Mejor arquero · Jugador joven
+// ============================================================
+
+export function getAwardPoints(profile: Profile, awards: Awards | null): number {
+  if (!awards) return 0
+  let pts = 0
+  if (profile.top_scorer   && profile.top_scorer   === awards.top_scorer)   pts += 10
+  if (profile.mvp          && profile.mvp          === awards.mvp)          pts += 10
+  if (profile.best_gk      && profile.best_gk      === awards.best_gk)      pts += 10
+  if (profile.young_player && profile.young_player === awards.young_player) pts += 10
+  return pts
+}
+
+// ============================================================
 // TABLA DE POSICIONES
 // ============================================================
 
 export function computeStandings(
   profiles: Profile[],
   matches: Match[],
-  predictions: Prediction[]
+  predictions: Prediction[],
+  awards: Awards | null = null
 ): PlayerStats[] {
   const predsByUser: Record<string, Record<number, Prediction>> = {}
   for (const pred of predictions) {
@@ -135,7 +151,8 @@ export function computeStandings(
     }
 
     const bonus = getBonus(profile, matches)
-    const totalPoints = matchPoints + bonus.champion + bonus.runner_up + bonus.third
+    const awardPts = getAwardPoints(profile, awards)
+    const totalPoints = matchPoints + bonus.champion + bonus.runner_up + bonus.third + awardPts
 
     return {
       profile,
@@ -146,6 +163,7 @@ export function computeStandings(
       champion_pts:     bonus.champion,
       runner_up_pts:    bonus.runner_up,
       third_pts:        bonus.third,
+      award_pts:        awardPts,
       matches_predicted: matchesPredicted,
     }
   })

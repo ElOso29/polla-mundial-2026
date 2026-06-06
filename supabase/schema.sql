@@ -11,8 +11,33 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   champion     TEXT,                      -- equipo elegido como campeón (+25)
   runner_up    TEXT,                      -- equipo elegido como subcampeón (+20)
   third_place  TEXT,                      -- equipo elegido como 3er puesto (+10)
+  top_scorer   TEXT,                      -- goleador elegido (+10)
+  mvp          TEXT,                      -- MVP elegido (+10)
+  best_gk      TEXT,                      -- mejor arquero elegido (+10)
+  young_player TEXT,                      -- jugador joven elegido (+10)
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 1b. JUGADORES (plantillas de las 48 selecciones)
+CREATE TABLE IF NOT EXISTS public.players (
+  id          SERIAL PRIMARY KEY,
+  team        TEXT NOT NULL,             -- nombre de la selección (igual que en matches)
+  name        TEXT NOT NULL,
+  position    TEXT,                      -- GK / DEF / MID / FWD
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_players_team ON public.players(team);
+
+-- 1c. PREMIOS INDIVIDUALES REALES (1 sola fila; la setea el admin al final)
+CREATE TABLE IF NOT EXISTS public.awards (
+  id            INT PRIMARY KEY DEFAULT 1,
+  top_scorer    TEXT,
+  mvp           TEXT,
+  best_gk       TEXT,
+  young_player  TEXT,
+  CONSTRAINT awards_singleton CHECK (id = 1)
+);
+INSERT INTO public.awards (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
 -- Trigger: crear perfil automáticamente al registrarse
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -75,6 +100,8 @@ CREATE TRIGGER predictions_updated_at
 ALTER TABLE public.profiles    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.matches     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.players     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.awards      ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: cualquiera puede leer, solo el dueño actualiza
 CREATE POLICY "profiles_select" ON public.profiles FOR SELECT USING (TRUE);
@@ -100,6 +127,16 @@ CREATE POLICY "predictions_update" ON public.predictions FOR UPDATE
     auth.uid() = user_id AND
     NOT EXISTS (SELECT 1 FROM public.matches WHERE id = match_id AND locked)
   );
+
+-- Players: cualquiera lee, solo admin escribe
+CREATE POLICY "players_select" ON public.players FOR SELECT USING (TRUE);
+CREATE POLICY "players_insert" ON public.players FOR INSERT
+  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin));
+
+-- Awards: cualquiera lee, solo admin actualiza
+CREATE POLICY "awards_select" ON public.awards FOR SELECT USING (TRUE);
+CREATE POLICY "awards_update" ON public.awards FOR UPDATE
+  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin));
 
 -- ============================================================
 -- ÍNDICES

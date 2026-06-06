@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { computeStandings } from '@/lib/scoring'
-import type { Profile, Match, Prediction, PlayerStats } from '@/types'
+import type { Profile, Match, Prediction, PlayerStats, Awards } from '@/types'
 import { PRIZES } from '@/types'
 
 const MEDALS = ['🥇', '🥈', '🥉']
@@ -20,13 +20,16 @@ export default function HomePage() {
 
   const loadStandings = async () => {
     const supabase = createClient()
-    const [{ data: profiles }, { data: matches }, { data: predictions }] = await Promise.all([
+    const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }] = await Promise.all([
       supabase.from('profiles').select('*'),
       supabase.from('matches').select('*').order('match_number'),
       supabase.from('predictions').select('*'),
+      supabase.from('awards').select('*').maybeSingle(),
     ])
     if (profiles && matches && predictions) {
-      setStandings(computeStandings(profiles as Profile[], matches as Match[], predictions as Prediction[]))
+      setStandings(computeStandings(
+        profiles as Profile[], matches as Match[], predictions as Prediction[], (awards as Awards) ?? null
+      ))
       setLastUpdate(new Date())
     }
     setLoading(false)

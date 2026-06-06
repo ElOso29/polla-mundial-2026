@@ -77,6 +77,30 @@ export default function RulesPage() {
         </div>
       </section>
 
+      {/* Premios individuales */}
+      <section className="rounded-xl border border-pitch-border bg-pitch-card p-6 space-y-4">
+        <h2 className="font-display text-2xl tracking-wide text-gold">⭐ PREMIOS INDIVIDUALES</h2>
+        <p className="text-sm text-gray-400">
+          Al registrarte también eliges (de cualquier selección): goleador, MVP, mejor arquero y jugador joven del torneo.
+        </p>
+        <div className="space-y-3">
+          {[
+            { pts: '+10', label: '⚽ Goleador', desc: 'Máximo goleador del Mundial', color: 'text-gold' },
+            { pts: '+10', label: '⭐ MVP', desc: 'Mejor jugador del torneo (Balón de Oro)', color: 'text-gold' },
+            { pts: '+10', label: '🧤 Mejor arquero', desc: 'Mejor portero (Guante de Oro)', color: 'text-gold' },
+            { pts: '+10', label: '🌱 Jugador joven', desc: 'Mejor jugador joven del torneo', color: 'text-gold' },
+          ].map(({ pts, label, desc, color }) => (
+            <div key={label} className="flex items-start gap-3">
+              <span className={`font-display text-2xl w-10 text-center flex-shrink-0 ${color}`}>{pts}</span>
+              <div>
+                <p className="text-sm font-semibold text-gray-200">{label}</p>
+                <p className="text-xs text-gray-500">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Desempate */}
       <section className="rounded-xl border border-pitch-border bg-pitch-card p-6 space-y-4">
         <h2 className="font-display text-2xl tracking-wide text-gold">⚖️ CRITERIOS DE DESEMPATE</h2>
