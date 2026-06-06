@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { getMatchPoints } from '@/lib/scoring'
 import { TEAMS_2026 } from '@/lib/teams'
 import PlayerPicker from '@/components/PlayerPicker'
+import TeamPicker from '@/components/TeamPicker'
 import type { Match, Prediction, Profile, Stage, Player } from '@/types'
 import { STAGE_LABELS, PICKS_DEADLINE, MATCH_LOCK_MINUTES } from '@/types'
 
@@ -175,18 +176,12 @@ export default function PredictionsPage() {
           ] as const).map(({ key, label, val }) => (
             <div key={key}>
               <label className="block text-xs text-gray-400 mb-1">{label}</label>
-              {picksOpen ? (
-                <select
-                  value={val}
-                  onChange={e => savePicks({ [key]: e.target.value })}
-                  className="w-full bg-pitch border border-pitch-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
-                >
-                  <option value="">Sin elegir...</option>
-                  {TEAMS_2026.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              ) : (
-                <div className="text-sm font-semibold text-gray-200 py-2">{val || '—'}</div>
-              )}
+              <TeamPicker
+                teams={TEAMS_2026}
+                value={val}
+                onChange={(team) => savePicks({ [key]: team })}
+                disabled={!picksOpen}
+              />
             </div>
           ))}
         </div>

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { TEAMS_2026 } from '@/lib/teams'
+import TeamPicker from '@/components/TeamPicker'
 import { PICKS_DEADLINE } from '@/types'
 
 export default function AuthPage() {
@@ -148,15 +149,7 @@ export default function AuthPage() {
                 🥇 Elige tu CAMPEÓN{' '}
                 <span className="text-gold text-xs">(+25 pts — no se puede cambiar)</span>
               </label>
-              <select
-                value={champion}
-                onChange={e => setChampion(e.target.value)}
-                required
-                className="w-full bg-pitch border border-pitch-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
-              >
-                <option value="">Selecciona un país...</option>
-                {TEAMS_2026.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <TeamPicker teams={TEAMS_2026} value={champion} onChange={setChampion} />
             </div>
 
             <div>
@@ -164,15 +157,7 @@ export default function AuthPage() {
                 🥈 Elige tu SUBCAMPEÓN{' '}
                 <span className="text-gold text-xs">(+20 pts)</span>
               </label>
-              <select
-                value={runnerUp}
-                onChange={e => setRunnerUp(e.target.value)}
-                required
-                className="w-full bg-pitch border border-pitch-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
-              >
-                <option value="">Selecciona un país...</option>
-                {TEAMS_2026.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <TeamPicker teams={TEAMS_2026} value={runnerUp} onChange={setRunnerUp} />
             </div>
 
             <div>
@@ -180,15 +165,7 @@ export default function AuthPage() {
                 🥉 Elige tu 3er PUESTO{' '}
                 <span className="text-gold text-xs">(+10 pts)</span>
               </label>
-              <select
-                value={thirdPlace}
-                onChange={e => setThirdPlace(e.target.value)}
-                required
-                className="w-full bg-pitch border border-pitch-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gold/50 text-gray-100"
-              >
-                <option value="">Selecciona un país...</option>
-                {TEAMS_2026.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <TeamPicker teams={TEAMS_2026} value={thirdPlace} onChange={setThirdPlace} />
             </div>
           </>
         )}
