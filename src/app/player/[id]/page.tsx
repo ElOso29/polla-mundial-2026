@@ -17,12 +17,15 @@ export default function PlayerPage() {
   const [activeStage, setActiveStage] = useState<Stage>('group')
   const [activeGroup, setActiveGroup] = useState<string>('A')
   const [awards,    setAwards]    = useState<Awards | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading,   setLoading]   = useState(true)
   const [notFound,  setNotFound]  = useState(false)
 
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUserId(user?.id ?? null)
       const [{ data: playerData }, { data: matchData }, { data: predData }, { data: awardsData }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', id).single(),
         supabase.from('matches').select('*').order('match_number'),
@@ -50,6 +53,9 @@ export default function PlayerPage() {
       <Link href="/" className="text-gold hover:underline text-sm mt-2 inline-block">← Volver</Link>
     </div>
   )
+
+  const isOwn = !!currentUserId && currentUserId === id
+  const matchStarted = (m: Match) => !!m.match_date && Date.now() >= new Date(m.match_date).getTime()
 
   const stages = STAGES_ORDER.filter(s => matches.some(m => m.stage === s))
   const groups = [...new Set(
@@ -153,6 +159,7 @@ export default function PlayerPage() {
       <div className="space-y-2">
         {filteredMatches.map(match => {
           const pred = preds[match.id]
+          const revealed = isOwn || matchStarted(match)
           const hasResult = match.home_score !== null
           const { points, exact, partial } = hasResult
             ? getMatchPoints(match, pred)
@@ -174,12 +181,16 @@ export default function PlayerPage() {
                 <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
                   <span className="text-right font-semibold">{match.home_team}</span>
                   <div className="text-center">
-                    {pred ? (
-                      <span className="font-bold text-gray-300">
-                        {pred.home_score} – {pred.away_score}
-                      </span>
+                    {revealed ? (
+                      pred ? (
+                        <span className="font-bold text-gray-300">
+                          {pred.home_score} – {pred.away_score}
+                        </span>
+                      ) : (
+                        <span className="text-gray-700 text-xs">sin pron.</span>
+                      )
                     ) : (
-                      <span className="text-gray-700 text-xs">sin pron.</span>
+                      <span className="text-gray-600 text-xs" title="Privado hasta el inicio del partido">🔒 oculto</span>
                     )}
                   </div>
                   <span className="font-semibold">{match.away_team}</span>

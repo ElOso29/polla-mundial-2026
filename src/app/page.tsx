@@ -20,16 +20,24 @@ export default function HomePage() {
 
   const loadStandings = async () => {
     const supabase = createClient()
-    const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }] = await Promise.all([
+    const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }, { data: counts }] = await Promise.all([
       supabase.from('profiles').select('*'),
       supabase.from('matches').select('*').order('match_number'),
       supabase.from('predictions').select('*'),
       supabase.from('awards').select('*').maybeSingle(),
+      supabase.rpc('prediction_counts'),
     ])
     if (profiles && matches && predictions) {
-      setStandings(computeStandings(
+      const table = computeStandings(
         profiles as Profile[], matches as Match[], predictions as Prediction[], (awards as Awards) ?? null
-      ))
+      )
+      // Conteo de pronósticos por jugador (vía función segura, sin exponer el contenido)
+      const countMap: Record<string, number> = {}
+      for (const r of (counts ?? []) as { user_id: string; n: number }[]) countMap[r.user_id] = Number(r.n)
+      for (const s of table) {
+        if (countMap[s.profile.id] !== undefined) s.matches_predicted = countMap[s.profile.id]
+      }
+      setStandings(table)
       setLastUpdate(new Date())
     }
     setLoading(false)

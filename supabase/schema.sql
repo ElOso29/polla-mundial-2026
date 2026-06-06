@@ -115,8 +115,15 @@ CREATE POLICY "matches_insert"  ON public.matches FOR INSERT
 CREATE POLICY "matches_update"  ON public.matches FOR UPDATE
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin));
 
--- Predictions: cualquiera lee, solo dueño escribe (si partido no está bloqueado)
-CREATE POLICY "predictions_select" ON public.predictions FOR SELECT USING (TRUE);
+-- Predictions: ves los tuyos siempre; los ajenos SOLO si el partido ya empezó
+CREATE POLICY "predictions_select" ON public.predictions FOR SELECT
+  USING (
+    auth.uid() = user_id
+    OR EXISTS (
+      SELECT 1 FROM public.matches m
+      WHERE m.id = match_id AND m.match_date IS NOT NULL AND NOW() >= m.match_date
+    )
+  );
 CREATE POLICY "predictions_insert" ON public.predictions FOR INSERT
   WITH CHECK (
     auth.uid() = user_id AND
@@ -137,6 +144,18 @@ CREATE POLICY "players_insert" ON public.players FOR INSERT
 CREATE POLICY "awards_select" ON public.awards FOR SELECT USING (TRUE);
 CREATE POLICY "awards_update" ON public.awards FOR UPDATE
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin));
+
+-- ============================================================
+-- CONTEO DE PRONÓSTICOS (sin exponer el contenido)
+-- Permite mostrar "N/104 pronósticos" de cada jugador en la tabla
+-- aunque los pronósticos ajenos estén ocultos hasta el inicio.
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.prediction_counts()
+RETURNS TABLE(user_id UUID, n BIGINT)
+LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT user_id, COUNT(*) FROM public.predictions GROUP BY user_id;
+$$;
+GRANT EXECUTE ON FUNCTION public.prediction_counts() TO anon, authenticated;
 
 -- ============================================================
 -- ÍNDICES
