@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { computeStandings } from '@/lib/scoring'
@@ -17,52 +17,72 @@ const PRIZE_LABELS = [
 export default function HomePage() {
   const [standings, setStandings] = useState<PlayerStats[]>([])
   const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
-  const loadStandings = async () => {
-    const supabase = createClient()
-    const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }, { data: counts }, { data: secrets }] = await Promise.all([
-      supabase.from('profiles').select('*'),
-      supabase.from('matches').select('*').order('match_number'),
-      supabase.from('predictions').select('*'),
-      supabase.from('awards').select('*').maybeSingle(),
-      supabase.rpc('prediction_counts'),
-      supabase.from('secret_picks').select('*'),
-    ])
-    if (profiles && matches && predictions) {
-      const secretByUser: Record<string, SecretPicks> = {}
-      for (const s of (secrets ?? []) as SecretPicks[]) if (s.user_id) secretByUser[s.user_id] = s
-      const table = computeStandings(
-        profiles as Profile[], matches as Match[], predictions as Prediction[], (awards as Awards) ?? null, secretByUser
-      )
-      // Conteo de pronósticos por jugador (vía función segura, sin exponer el contenido)
-      const countMap: Record<string, number> = {}
-      for (const r of (counts ?? []) as { user_id: string; n: number }[]) countMap[r.user_id] = Number(r.n)
-      for (const s of table) {
-        if (countMap[s.profile.id] !== undefined) s.matches_predicted = countMap[s.profile.id]
+  const loadStandings = useCallback(async () => {
+    try {
+      const supabase = createClient()
+      const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }, { data: counts }, { data: secrets }] = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase.from('matches').select('*').order('match_number'),
+        supabase.from('predictions').select('*'),
+        supabase.from('awards').select('*').maybeSingle(),
+        supabase.rpc('prediction_counts'),
+        supabase.from('secret_picks').select('*'),
+      ])
+      if (profiles && matches && predictions) {
+        const secretByUser: Record<string, SecretPicks> = {}
+        for (const s of (secrets ?? []) as SecretPicks[]) if (s.user_id) secretByUser[s.user_id] = s
+        const table = computeStandings(
+          profiles as Profile[], matches as Match[], predictions as Prediction[], (awards as Awards) ?? null, secretByUser
+        )
+        const countMap: Record<string, number> = {}
+        for (const r of (counts ?? []) as { user_id: string; n: number }[]) countMap[r.user_id] = Number(r.n)
+        for (const s of table) {
+          if (countMap[s.profile.id] !== undefined) s.matches_predicted = countMap[s.profile.id]
+        }
+        setStandings(table)
+        setLastUpdate(new Date())
+        setError(false)
       }
-      setStandings(table)
-      setLastUpdate(new Date())
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     loadStandings()
 
-    // Actualización en tiempo real cuando cambien resultados o pronósticos
+    // Tiempo real con debounce: agrupa ráfagas de cambios en una sola recarga
     const supabase = createClient()
+    let timer: ReturnType<typeof setTimeout>
+    const debounced = () => { clearTimeout(timer); timer = setTimeout(loadStandings, 1500) }
     const channel = supabase
       .channel('standings-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, loadStandings)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'predictions' }, loadStandings)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'awards' }, loadStandings)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, debounced)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'predictions' }, debounced)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'awards' }, debounced)
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
-  }, [])
+    return () => { clearTimeout(timer); supabase.removeChannel(channel) }
+  }, [loadStandings])
 
   if (loading) return <LoadingSkeleton />
+
+  if (error && standings.length === 0) return (
+    <div className="text-center py-20 space-y-4">
+      <p className="text-gray-400">No se pudo cargar la tabla. Revisa tu conexión.</p>
+      <button
+        onClick={() => { setLoading(true); loadStandings() }}
+        className="bg-gold text-pitch font-bold px-5 py-2.5 rounded-lg hover:bg-gold-light transition-colors"
+      >
+        Reintentar
+      </button>
+    </div>
+  )
 
   const totalPlayers = standings.length
 
