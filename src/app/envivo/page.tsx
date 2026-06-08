@@ -13,20 +13,27 @@ function ymd(d: Date) {
 export default function EnVivoPage() {
   const [date, setDate] = useState<Date>(() => {
     const today = new Date()
+    const isTest = typeof window !== 'undefined' && !!new URLSearchParams(window.location.search).get('league')
+    if (isTest) return today
     const start = new Date('2026-06-11T12:00:00')
     return today < start ? start : today
   })
+  const [league] = useState<string>(() =>
+    typeof window !== 'undefined'
+      ? (new URLSearchParams(window.location.search).get('league') || 'fifa.world')
+      : 'fifa.world'
+  )
   const [events, setEvents] = useState<Ev[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`/api/scores?date=${ymd(date)}`)
+      const res = await fetch(`/api/scores?league=${league}&date=${ymd(date)}`)
       const data = await res.json()
       setEvents(data.events ?? [])
     } catch { /* noop */ }
     setLoading(false)
-  }, [date])
+  }, [date, league])
 
   useEffect(() => {
     setLoading(true)
@@ -40,6 +47,9 @@ export default function EnVivoPage() {
   return (
     <div className="space-y-5">
       <h1 className="font-display text-4xl tracking-wider text-gold text-center">EN VIVO</h1>
+      {league !== 'fifa.world' && (
+        <p className="text-center text-xs text-gold/70">🧪 Modo prueba · liga: {league}</p>
+      )}
 
       {/* Navegación por día */}
       <div className="flex items-center justify-between gap-3">

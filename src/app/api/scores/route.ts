@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const date = searchParams.get('date') || ''
-  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard${date ? `?dates=${date}` : ''}`
+  const leagueRaw = searchParams.get('league') || 'fifa.world'
+  const league = /^[a-z0-9.]+$/.test(leagueRaw) ? leagueRaw : 'fifa.world'
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard${date ? `?dates=${date}` : ''}`
 
   try {
     const res = await fetch(url, { cache: 'no-store' })
