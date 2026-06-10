@@ -23,14 +23,18 @@ export default function HomePage() {
   const loadStandings = useCallback(async () => {
     try {
       const supabase = createClient()
-      const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }, { data: counts }, { data: secrets }] = await Promise.all([
-        supabase.from('profiles').select('*'),
-        supabase.from('matches').select('*').order('match_number'),
-        supabase.from('predictions').select('*'),
-        supabase.from('awards').select('*').maybeSingle(),
-        supabase.rpc('prediction_counts'),
-        supabase.from('secret_picks').select('*'),
-      ])
+      const result = await Promise.race([
+        Promise.all([
+          supabase.from('profiles').select('*'),
+          supabase.from('matches').select('*').order('match_number'),
+          supabase.from('predictions').select('*'),
+          supabase.from('awards').select('*').maybeSingle(),
+          supabase.rpc('prediction_counts'),
+          supabase.from('secret_picks').select('*'),
+        ]),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000)),
+      ]) as any[]
+      const [{ data: profiles }, { data: matches }, { data: predictions }, { data: awards }, { data: counts }, { data: secrets }] = result
       if (profiles && matches && predictions) {
         const secretByUser: Record<string, SecretPicks> = {}
         for (const s of (secrets ?? []) as SecretPicks[]) if (s.user_id) secretByUser[s.user_id] = s
@@ -43,6 +47,7 @@ export default function HomePage() {
           if (countMap[s.profile.id] !== undefined) s.matches_predicted = countMap[s.profile.id]
         }
         setStandings(table)
+        try { localStorage.setItem('pm_standings_v1', JSON.stringify(table)) } catch {}
         setLastUpdate(new Date())
         setError(false)
       }
@@ -54,6 +59,12 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    // Muestra la última tabla guardada al instante (luego se refresca sola)
+    try {
+      const cached = localStorage.getItem('pm_standings_v1')
+      if (cached) { setStandings(JSON.parse(cached)); setLoading(false) }
+    } catch {}
+
     loadStandings()
 
     // Tiempo real con debounce: agrupa ráfagas de cambios en una sola recarga
