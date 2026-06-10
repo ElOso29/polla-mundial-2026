@@ -46,19 +46,30 @@ export default function PredictionsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth'); return }
 
+      // Jugadores: usar caché (no cambian en el torneo); solo pedirlos la 1ª vez.
+      let cachedPlayers: Player[] = []
+      try { cachedPlayers = JSON.parse(localStorage.getItem('pm_players_v1') || '[]') } catch {}
+      if (cachedPlayers.length) setPlayers(cachedPlayers)
+      const needPlayers = cachedPlayers.length === 0
+
       const result = await Promise.race([
         Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).single(),
           supabase.from('matches').select('*').order('match_number'),
           supabase.from('predictions').select('*').eq('user_id', user.id),
-          supabase.from('players').select('*').order('team'),
           supabase.from('secret_picks').select('*').eq('user_id', user.id).maybeSingle(),
+          needPlayers
+            ? supabase.from('players').select('id,team,name,position').order('team')
+            : Promise.resolve({ data: null }),
         ]),
         new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000)),
       ]) as any[]
-      const [{ data: profileData }, { data: matchData }, { data: predData }, { data: playerData }, { data: secretData }] = result
+      const [{ data: profileData }, { data: matchData }, { data: predData }, { data: secretData }, { data: freshPlayers }] = result
 
-      if (playerData) setPlayers(playerData)
+      if (freshPlayers) {
+        setPlayers(freshPlayers)
+        try { localStorage.setItem('pm_players_v1', JSON.stringify(freshPlayers)) } catch {}
+      }
       if (profileData) {
         setProfile(profileData)
         setPicks({
