@@ -29,6 +29,7 @@ export default function PredictionsPage() {
   const [activeGroup, setActiveGroup] = useState<string>('A')
   const [saving,     setSaving]     = useState<Record<number, boolean>>({})
   const [loading,    setLoading]    = useState(true)
+  const [error,      setError]      = useState(false)
   const [players,    setPlayers]    = useState<Player[]>([])
   const [picks,      setPicks]      = useState({
     champion: '', runner_up: '', third_place: '',
@@ -39,18 +40,23 @@ export default function PredictionsPage() {
 
   const supabase = createClient()
 
-  useEffect(() => {
-    const load = async () => {
+  const load = useCallback(async () => {
+    try {
+      setError(false)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth'); return }
 
-      const [{ data: profileData }, { data: matchData }, { data: predData }, { data: playerData }, { data: secretData }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('matches').select('*').order('match_number'),
-        supabase.from('predictions').select('*').eq('user_id', user.id),
-        supabase.from('players').select('*').order('team'),
-        supabase.from('secret_picks').select('*').eq('user_id', user.id).maybeSingle(),
-      ])
+      const result = await Promise.race([
+        Promise.all([
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
+          supabase.from('matches').select('*').order('match_number'),
+          supabase.from('predictions').select('*').eq('user_id', user.id),
+          supabase.from('players').select('*').order('team'),
+          supabase.from('secret_picks').select('*').eq('user_id', user.id).maybeSingle(),
+        ]),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000)),
+      ]) as any[]
+      const [{ data: profileData }, { data: matchData }, { data: predData }, { data: playerData }, { data: secretData }] = result
 
       if (playerData) setPlayers(playerData)
       if (profileData) {
@@ -76,10 +82,14 @@ export default function PredictionsPage() {
         setSaved(savedMap)
         setDraft(draftMap)
       }
+    } catch {
+      setError(true)
+    } finally {
       setLoading(false)
     }
-    load()
   }, [])
+
+  useEffect(() => { load() }, [load])
 
   const savePrediction = useCallback(async (matchId: number) => {
     const d = draft[matchId]
@@ -132,6 +142,18 @@ export default function PredictionsPage() {
     setPicksMsg(failed ? 'Error al guardar' : '✓ Guardado')
     setTimeout(() => setPicksMsg(''), 2500)
   }
+
+  if (error) return (
+    <div className="text-center py-20 space-y-4">
+      <p className="text-gray-400">No se pudo cargar. El servidor puede estar despertando, reintenta.</p>
+      <button
+        onClick={() => { setLoading(true); load() }}
+        className="bg-gold text-pitch font-bold px-5 py-2.5 rounded-lg hover:bg-gold-light transition-colors"
+      >
+        Reintentar
+      </button>
+    </div>
+  )
 
   if (loading) return (
     <div className="text-center py-20 text-gray-500 animate-pulse">Cargando pronósticos...</div>

@@ -29,8 +29,13 @@ export default function AuthPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true); setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(true); setError(''); setInfo('')
+    const { error } = await Promise.race([
+      supabase.auth.signInWithPassword({ email, password }),
+      new Promise<{ error: { message: string } }>(resolve =>
+        setTimeout(() => resolve({ error: { message: 'El servidor tardó demasiado (puede estar despertando). Reintenta en unos segundos.' } }), 15000)
+      ),
+    ]) as { error: { message: string } | null }
     if (error) { setError(error.message); setLoading(false); return }
     router.push('/predictions')
     router.refresh()
