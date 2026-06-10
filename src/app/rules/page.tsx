@@ -13,7 +13,7 @@ export default function RulesPage() {
         <p className="text-3xl font-bold text-gray-100">
           ${PRIZE_POOL.toLocaleString('es-CL')} CLP
         </p>
-        <p className="text-gray-400 text-sm">12 participantes × $30.000 CLP</p>
+        <p className="text-gray-400 text-sm">11 participantes × $30.000 CLP</p>
 
         <div className="grid grid-cols-3 gap-3 mt-4">
           {[

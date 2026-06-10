@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { computeStandings } from '@/lib/scoring'
 import Countdown from '@/components/Countdown'
 import type { Profile, Match, Prediction, PlayerStats, Awards, SecretPicks } from '@/types'
-import { PRIZES } from '@/types'
+import { PRIZES, PRIZE_POOL, TOTAL_PARTICIPANTS } from '@/types'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 const PRIZE_LABELS = [
@@ -113,7 +113,7 @@ export default function HomePage() {
         </h1>
         <p className="text-gray-400 text-sm">
           {totalPlayers} participantes · Bote total:{' '}
-          <span className="text-gold font-semibold">$360.000 CLP</span>
+          <span className="text-gold font-semibold">${PRIZE_POOL.toLocaleString('es-CL')} CLP</span>
         </p>
         <p className="text-gray-600 text-xs">
           Actualizado: {lastUpdate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
@@ -244,10 +244,10 @@ export default function HomePage() {
       )}
 
       {/* CTA para registrarse */}
-      {standings.length < 12 && (
+      {standings.length < TOTAL_PARTICIPANTS && (
         <div className="rounded-xl border border-gold/20 bg-gold/5 p-6 text-center space-y-3">
           <p className="font-display text-2xl text-gold tracking-wide">
-            QUEDAN {12 - standings.length} CUPOS
+            QUEDAN {TOTAL_PARTICIPANTS - standings.length} CUPOS
           </p>
           <p className="text-gray-400 text-sm">
             El plazo vence el 11 de junio de 2026. ¡No te quedes afuera!

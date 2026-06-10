@@ -6,7 +6,7 @@ import AuthGate from '@/components/AuthGate'
 export const metadata: Metadata = {
   metadataBase: new URL('https://polla-mundial-2026-sand.vercel.app'),
   title: 'Polla Mundial 2026 ⚽🏆',
-  description: 'Pronostica los 104 partidos, elige campeón, goleador y MVP. 12 amigos, $360.000 en juego. ¡Entra y juega!',
+  description: 'Pronostica los 104 partidos, elige campeón, goleador y MVP. 11 amigos, $330.000 en juego. ¡Entra y juega!',
   openGraph: {
     title: 'Polla Mundial 2026 ⚽🏆',
     description: 'Pronostica los 104 partidos, elige campeón, goleador y MVP. ¡Entra y juega!',

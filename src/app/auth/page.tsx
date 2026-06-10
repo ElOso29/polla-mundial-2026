@@ -188,8 +188,8 @@ export default function AuthPage() {
       {mode === 'register' && (
         <div className="rounded-xl border border-pitch-border bg-pitch-card/50 p-4 text-xs text-gray-500 space-y-1">
           <p className="text-gray-400 font-semibold">Resumen de la polla</p>
-          <p>💰 Bote: $360.000 CLP (12 × $30.000)</p>
-          <p>🥇 1er lugar: $252.000 · 🥈 2do: $72.000 · 🥉 3ro: $36.000</p>
+          <p>💰 Bote: $330.000 CLP (11 × $30.000)</p>
+          <p>🥇 1er lugar: $231.000 · 🥈 2do: $66.000 · 🥉 3ro: $33.000</p>
           <p>⚽ Exacto = 5pts · Ganador = 3pts · Goles de un equipo = 1pt c/u</p>
           <p>🏆 Campeón +25 · Subcampeón +20 · 3er puesto +10</p>
           <p>📅 Plazo de inscripción y elecciones: 11 jun 2026, 14:00 (Chile)</p>

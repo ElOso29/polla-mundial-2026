@@ -81,11 +81,13 @@ export const STAGE_LABELS: Record<Stage, string> = {
   final:  'Gran Final',
 }
 
-export const PRIZE_POOL = 360_000 // CLP
+export const TOTAL_PARTICIPANTS = 11
+export const ENTRY_FEE = 30_000 // CLP por persona
+export const PRIZE_POOL = TOTAL_PARTICIPANTS * ENTRY_FEE // 330.000 CLP
 export const PRIZES = {
-  first:  252_000, // 70%
-  second:  72_000, // 20%
-  third:   36_000, // 10%
+  first:  Math.round(PRIZE_POOL * 0.70), // 70%
+  second: Math.round(PRIZE_POOL * 0.20), // 20%
+  third:  Math.round(PRIZE_POOL * 0.10), // 10%
 }
 
 // Plazo para elegir/editar campeón, subcampeón, 3er puesto y premios
