@@ -62,11 +62,11 @@ export default function Navigation() {
 
         {/* Desktop links */}
         <div className="hidden sm:flex items-center gap-6">
-          {navLink('/', 'Tabla')}
-          {navLink('/envivo', 'En vivo')}
-          {navLink('/fixture', 'Fixture')}
-          {navLink('/comparar', 'Comparar')}
-          {navLink('/rules', 'Reglas')}
+          {profile && navLink('/', 'Tabla')}
+          {profile && navLink('/envivo', 'En vivo')}
+          {profile && navLink('/fixture', 'Fixture')}
+          {profile && navLink('/comparar', 'Comparar')}
+          {profile && navLink('/rules', 'Reglas')}
           {profile && navLink('/predictions', 'Mis Pronósticos')}
           {profile?.is_admin && navLink('/admin', 'Admin')}
         </div>
@@ -113,11 +113,11 @@ export default function Navigation() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="sm:hidden bg-pitch-card border-t border-pitch-border px-4 py-4 flex flex-col gap-4">
-          {navLink('/', 'Tabla')}
-          {navLink('/envivo', 'En vivo')}
-          {navLink('/fixture', 'Fixture')}
-          {navLink('/comparar', 'Comparar')}
-          {navLink('/rules', 'Reglas')}
+          {profile && navLink('/', 'Tabla')}
+          {profile && navLink('/envivo', 'En vivo')}
+          {profile && navLink('/fixture', 'Fixture')}
+          {profile && navLink('/comparar', 'Comparar')}
+          {profile && navLink('/rules', 'Reglas')}
           {profile && navLink('/predictions', 'Mis Pronósticos')}
           {profile?.is_admin && navLink('/admin', 'Admin')}
           <div className="border-t border-pitch-border pt-4">

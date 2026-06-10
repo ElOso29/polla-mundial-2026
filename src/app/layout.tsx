@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Navigation from '@/components/Navigation'
+import AuthGate from '@/components/AuthGate'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://polla-mundial-2026-sand.vercel.app'),
@@ -24,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-pitch text-gray-100 font-body">
         <Navigation />
         <main className="max-w-5xl mx-auto px-4 py-8">
-          {children}
+          <AuthGate>{children}</AuthGate>
         </main>
       </body>
     </html>
