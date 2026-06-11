@@ -21,8 +21,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ['Bebas Neue', 'Impact', 'sans-serif'],
-        body:    ['DM Sans', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Impact', 'sans-serif'],
+        body:    ['var(--font-body)', 'system-ui', 'sans-serif'],
       },
     },
   },

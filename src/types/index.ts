@@ -81,7 +81,7 @@ export const STAGE_LABELS: Record<Stage, string> = {
   final:  'Gran Final',
 }
 
-export const TOTAL_PARTICIPANTS = 11
+export const TOTAL_PARTICIPANTS = 10
 export const ENTRY_FEE = 30_000 // CLP por persona
 export const PRIZE_POOL = TOTAL_PARTICIPANTS * ENTRY_FEE // 330.000 CLP
 export const PRIZES = {

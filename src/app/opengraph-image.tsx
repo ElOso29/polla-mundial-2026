@@ -30,7 +30,7 @@ export default function Image() {
           2026
         </div>
         <div style={{ fontSize: 34, color: '#9ca3af', marginTop: 24 }}>
-          Pronósticos · 104 partidos · $330.000 en juego
+          Pronósticos · 104 partidos · $300.000 en juego
         </div>
       </div>
     ),
